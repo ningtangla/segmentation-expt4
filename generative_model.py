@@ -111,7 +111,7 @@ def sampleTexonsFeatureValue(featureMean, featureVariance, texonNum):
     return np.random.normal(featureMean, featureVariance, texonNum)
 
 class VisualizeTexons():
-    def __init__(self, heightImage, widthImage):
+    def __init__(self, widthImage, heightImage):
         self.screen = pygame.display.set_mode([widthImage, heightImage])
         self.screen.fill((0, 0, 0))
 
