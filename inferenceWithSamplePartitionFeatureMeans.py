@@ -63,6 +63,7 @@ class CalPartionLikelihoodLog():
         partitiedTreeP = 0
         for sampleIndex in range(featureChangeLeafNodeSampleTimes):
             leafPartitionParameterDf = self.sampleNodeFeatureMean(partitiedTree)
+            __import__('ipdb').set_trace()
             leafPartitionParameterDf['logP'] = leafPartitionParameterDf.apply(calWithOneLeafPartionLikelihoodLog, axis = 1,
                     args = (self.featureStdVarinces, texonsObserved))
             logPAllPartitions = leafPartitionParameterDf['logP'].sum()
@@ -180,7 +181,6 @@ def main():
  #   screen = pygame.display.set_mode([160, 200])
  #   inputImage = pygame.image.load('generateDemo.png')
  #   visualizePartitiedTree(diffPartitiedTrees, screen, inputImage, pAllPartition)
-    __import__('ipdb').set_trace()
 
 if __name__ == "__main__":
     main()

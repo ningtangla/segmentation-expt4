@@ -122,7 +122,7 @@ class VisualizeTexons():
                     texonsParameter.iloc[texonIndex][['vertexRightBottom','vertexRightTop',
                         'vertexLeftTop', 'vertexLeftBottom']].values, 0)
         pygame.display.flip()
-        pygame.image.save(self.screen, 'generateDemo.png')
+        pygame.image.save(self.screen, 'generateDemo2.png')
 
 def main():
     gridLengthX = 20
@@ -141,7 +141,10 @@ def main():
     tree.add_node(3, x = [0, 200], y = [100, 160], depth = 1)
     tree.add_node(4, x = [0, 100], y = [0, 100], depth = 2)
     tree.add_node(5, x = [100, 200], y = [0, 100], depth = 2)
-    tree.add_edges_from([(1,2),(1,3),(2,4),(2,5)])
+    tree.add_node(6, x = [100, 160], y = [0, 100], depth = 3)
+    tree.add_node(7, x = [160, 200], y = [0, 100], depth = 3)
+
+    tree.add_edges_from([(1,2),(1,3),(2,4),(2,5),(5,6),(5,7)])
  
     
     featureMeansRootNode = pd.DataFrame({'color': [0.5], 'length':[min(gridLengthX,
@@ -164,7 +167,7 @@ def main():
     texonsParameterTotal = pd.concat([sampleTexonsLocationsAndFeatures(partitionXTotal.iloc[partitionIndex],
         partitionYTotal.iloc[partitionIndex], partitionFeatureMeansTotal.iloc[partitionIndex]) for partitionIndex in
         range(len(leafPartitionParameterDf))], ignore_index = True)
-    texonsParameterTotal.to_csv('~/segmentation-expt4/demo.csv')
+    texonsParameterTotal.to_csv('~/segmentation-expt4/demo2.csv')
 
     visualizeTexons = VisualizeTexons(max(tree.node[1]['x']), max(tree.node[1]['y']))
     texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal)
