@@ -7,10 +7,9 @@ import pandas as pd
 
 
 class SampleNodeFeatureMean():
-    def __init__(self, featureUpperBound, featureLowerBound, alphaDirichlet):
+    def __init__(self, featureUpperBound, featureLowerBound):
         self.featureUpperBound = featureUpperBound
         self.featureLowerBound = featureLowerBound
-        self.alphaDirichlet = alphaDirichlet
 
     def __call__(self, tree):
         nonleafNodes = [n for n,d in dict(tree.out_degree()).items() if d!=0]
@@ -24,11 +23,10 @@ class SampleNodeFeatureMean():
             parentFeatureMeans = tree.node[nonleafNode]['featureMeans'][:].copy()
             childrenDepth = tree.node[nonleafNode]['depth'] + 1
             changeFeature = featureName[childrenDepth % len(featureName)]
-            parentChangeFeatureMean = parentFeatureMeans[changeFeature]
-            halfLength = (np.abs(parentChangeFeatureMean - self.featureUpperBound[changeFeature]), np.abs(parentChangeFeatureMean - self.featureLowerBound[changeFeature]))
-            halfChangeLength = np.min(halfLength)
-            proportionFeatureRange = np.random.dirichlet([self.alphaDirichlet] * len(childrenOfNonleafNode))
-            childrenChangeFeatureMeans = proportionFeatureRange * 2 * halfChangeLength - halfChangeLength + parentChangeFeatureMean.values
+            lengthFeatureChange = abs(self.featureUpperBound[changeFeature].values - self.featureLowerBound[changeFeature].values) 
+            gaussianMeanOfChangeFeatureMean = (self.featureUpperBound[changeFeature] + self.featureLowerBound[changeFeature])/2
+            gaussianSDOfChangeFeatureMean = lengthFeatureChange/10
+            childrenChangeFeatureMeans = np.random.normal(gaussianMeanOfChangeFeatureMean, gaussianSDOfChangeFeatureMean ** 2, len(childrenOfNonleafNode))
             for child in childrenOfNonleafNode:
                 parentFeatureMeans[changeFeature] = childrenChangeFeatureMeans[childrenOfNonleafNode.index(child)]
                 tree.node[child]['featureMeans'] = parentFeatureMeans.copy()
@@ -84,25 +82,25 @@ def transTexonParameterToPolygenDrawArguemnt(texonsParameter):
     texonsParameter['widthRotatedProjectX'] = texonsParameter['width'] * np.sin(texonsParameter['angleRotated']) 
     texonsParameter['lengthRotatedProjectY'] = texonsParameter['length'] * np.sin(texonsParameter['angleRotated'])
     texonsParameter['widthRotatedProjectY'] = texonsParameter['width'] * np.cos(texonsParameter['angleRotated'])
-    texonsParameter['vertexRightBottom'] = list(zip(np.int_((texonsParameter['x'] +
+    texonsParameter['vertexRightBottom'] = list(zip(np.int_(texonsParameter['x'] +(
         texonsParameter['lengthRotatedProjectX'] +
         texonsParameter['widthRotatedProjectX'])/2.0),
-        np.int_((texonsParameter['y'] + texonsParameter['lengthRotatedProjectY'] -
+        np.int_(texonsParameter['y'] + (texonsParameter['lengthRotatedProjectY'] -
             texonsParameter['widthRotatedProjectY'])/2.0)))
-    texonsParameter['vertexRightTop'] = list(zip(np.int_((texonsParameter['x'] +
+    texonsParameter['vertexRightTop'] = list(zip(np.int_(texonsParameter['x'] + (
         texonsParameter['lengthRotatedProjectX'] -
         texonsParameter['widthRotatedProjectX'])/2.0),
-        np.int_((texonsParameter['y'] + texonsParameter['lengthRotatedProjectY'] +
+        np.int_(texonsParameter['y'] + (texonsParameter['lengthRotatedProjectY'] +
             texonsParameter['widthRotatedProjectY'])/2.0)))
-    texonsParameter['vertexLeftTop'] = list(zip(np.int_((texonsParameter['x'] -
+    texonsParameter['vertexLeftBottom'] = list(zip(np.int_(texonsParameter['x'] - (
         texonsParameter['lengthRotatedProjectX'] -
         texonsParameter['widthRotatedProjectX'])/2.0),
-        np.int_((texonsParameter['y'] - texonsParameter['lengthRotatedProjectY'] +
+        np.int_(texonsParameter['y'] - (texonsParameter['lengthRotatedProjectY'] +
             texonsParameter['widthRotatedProjectY'])/2.0)))
-    texonsParameter['vertexLeftBottom'] = list(zip(np.int_((texonsParameter['x'] -
+    texonsParameter['vertexLeftTop'] = list(zip(np.int_(texonsParameter['x'] - (
         texonsParameter['lengthRotatedProjectX'] +
         texonsParameter['widthRotatedProjectX'])/2.0),
-        np.int_((texonsParameter['y'] - texonsParameter['lengthRotatedProjectY'] -
+        np.int_(texonsParameter['y'] - (texonsParameter['lengthRotatedProjectY'] -
             texonsParameter['widthRotatedProjectY'])/2.0)))
     return  texonsParameter
 
@@ -118,10 +116,10 @@ class VisualizeTexons():
         for texonIndex in range(len(texonsParameter)):
             pygame.draw.polygon(self.screen,
                     texonsParameter.iloc[texonIndex]['color'] * np.array([0, 255, 0]),
-                    texonsParameter.iloc[texonIndex][['vertexRightBottom','vertexRightTop',
-                        'vertexLeftTop', 'vertexLeftBottom']].values, 0)
+                    texonsParameter.iloc[texonIndex][['vertexLeftBottom', 'vertexLeftTop', 'vertexRightTop',
+                        'vertexRightBottom']].values, 0)
         pygame.display.flip()
-        pygame.image.save(self.screen, 'generateDemo2.png')
+        pygame.image.save(self.screen, 'generateDemo4.png')
 
 def main():
     gridLengthX = 20
@@ -156,9 +154,8 @@ def main():
     featureUpperBound = 2*featureMeansRootNode - featureStdVarinces * 3
     featureLowerBound = featureStdVarinces * 3
     
-    alphaDirichlet = 1
     sampleNodeFeatureMean = SampleNodeFeatureMean(featureUpperBound,
-            featureLowerBound, alphaDirichlet)
+            featureLowerBound)
     leafPartitionParameterDf = sampleNodeFeatureMean(tree)
     
     sampleTexonsLocationsAndFeatures = SampleTexonsLocationsAndFeatures(gridLengthX, gridLengthY, featureStdVarinces)
@@ -166,10 +163,11 @@ def main():
     texonsParameterTotal = pd.concat([sampleTexonsLocationsAndFeatures(partitionXTotal.iloc[partitionIndex],
         partitionYTotal.iloc[partitionIndex], partitionFeatureMeansTotal.iloc[partitionIndex]) for partitionIndex in
         range(len(leafPartitionParameterDf))], ignore_index = True)
-    texonsParameterTotal.to_csv('~/segmentation-expt4/demo2.csv')
 
-    visualizeTexons = VisualizeTexons(max(tree.node[1]['x']), max(tree.node[1]['y']))
     texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal)
-    visualizeTexons(texonsParameterTotal) 
+    __import__('ipdb').set_trace() 
+    visualizeTexons = VisualizeTexons(max(tree.node[1]['x']), max(tree.node[1]['y']))
+    texonsParameterDrawing.to_csv('~/segmentation-expt4/demo4.csv')
+    visualizeTexons(texonsParameterDrawing) 
 if __name__=="__main__":
     main()

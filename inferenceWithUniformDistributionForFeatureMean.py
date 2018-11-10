@@ -30,18 +30,21 @@ class GenerateDiffPartitiedTreesAndDiffFeaturedTrees():
         allChangeOrderFeaturedTrees = []
         for changeFeatures in changeFeatureOrders:
             untilCurrNonleafNodeFeaturedTrees = [tree]
+            changeFeature = changeFeatures[0] 
+            newestFeaturedTrees = [generatePossibleFeaturedTreesRootNode(untilCurrNodeTree, changeFeature, 1, self.featureMeansProportionInterval, self.featureUpperBound, self.featureLowerBound) for untilCurrNodeTree in untilCurrNonleafNodeFeaturedTrees]
+            untilCurrNonleafNodeFeaturedTrees = list(it.chain(*newestFeaturedTrees))
             for nonleafNode in nonleafNodes:
                 depthNonleafNode = tree.node[nonleafNode]['depth']
                 changeFeature = changeFeatures[depthNonleafNode % len(featureNames)]
                 newestFeaturedTrees = [generatePossibleFeaturedTreesCurrNonleafNode(untilCurrNodeTree, changeFeature, nonleafNode, self.featureMeansProportionInterval, self.featureUpperBound, self.featureLowerBound) for untilCurrNodeTree in untilCurrNonleafNodeFeaturedTrees]
                 untilCurrNonleafNodeFeaturedTrees = list(it.chain(*newestFeaturedTrees))
             allChangeOrderFeaturedTrees.extend(untilCurrNonleafNodeFeaturedTrees)
-        
         return allDirectionOrderPartitiedTrees, allChangeOrderFeaturedTrees 
         
 def generatePossiblePartitiedTreesCurrNonleafNode(tree, directionNames, nonleafNode, lengthIntervals):
     childrenOfNonleafNode = list(tree.successors(nonleafNode))
     childrenNodeNum = len(childrenOfNonleafNode)
+
     newPossiblePartitiedTrees = []
     for changeDirection in directionNames:
         parentPartitionChangeDirection = tree.node[nonleafNode]['partition'][changeDirection]
@@ -60,24 +63,40 @@ def generatePossiblePartitiedTreesCurrNonleafNode(tree, directionNames, nonleafN
 
         possiblePartitiedTrees = [mergeNewParameterIntoTrees(tree, childrenOfNonleafNode, childrenPartitions, 'partition', priorPartitionPorportion) for childrenPartitions, priorPartitionPorportion in zip(childrenPossiblePartitions, priorPartitionPorportions)]
         newPossiblePartitiedTrees.extend(possiblePartitiedTrees)
-
     return newPossiblePartitiedTrees
 
+def generatePossibleFeaturedTreesRootNode(tree, changeFeature, nonleafNode, featureMeanProportionInterval, featureUpperBound, featureLowerBound):
+    childrenOfNonleafNode = [1]
+    childrenNodeNum = len(childrenOfNonleafNode)
+    
+    parentMeanChangeFeature = tree.node[nonleafNode]['featureMeans'][changeFeature]
+    lengthFeatureChange = np.abs(featureUpperBound[changeFeature] - featureLowerBound[changeFeature]).values
+    childrenIntervalsNoLimit = np.arange(featureMeanProportionInterval, 1, featureMeanProportionInterval)
+    childrenPossibleIntervals = list(it.product(childrenIntervalsNoLimit, repeat = childrenNodeNum))
+    priorChangeProportions = [childrenNodeNum * math.log(1.0/lengthFeatureChange) for childrenPossibleInterval in childrenPossibleIntervals]
+    childrenPossibleMeansChangeFeature = featureLowerBound[changeFeature].values + lengthFeatureChange * np.array([childrenPossibleInterval for childrenPossibleInterval in childrenPossibleIntervals])
+    featureNames = list(tree.node[1]['featureMeans'])
+    featureMeans = list(map(lambda x: [x], tree.node[nonleafNode]['featureMeans'][:].values[0]))
+    possibleFeatureMeans = [[possibleMeanChangeFeature if featureIndex == featureNames.index(changeFeature) else featureMeans[featureIndex] for featureIndex in range(len(featureMeans))] for possibleMeanChangeFeature in childrenPossibleMeansChangeFeature]
+    childrenPossibleFeatureMeans = [[pd.DataFrame([diffChildFeatureMean], columns = featureNames) for diffChildFeatureMean in list(it.product(*featureMeans))] for featureMeans in possibleFeatureMeans] 
+    possibleFeaturedTrees = [mergeNewParameterIntoTrees(tree, childrenOfNonleafNode, childrenFeatureMeans, 'featureMeans', priorChangeProportion)  for childrenFeatureMeans, priorChangeProportion in zip(childrenPossibleFeatureMeans, priorChangeProportions)]
+    newPossibleFeaturedTrees = possibleFeaturedTrees
+    return newPossibleFeaturedTrees
+        
 def generatePossibleFeaturedTreesCurrNonleafNode(tree, changeFeature, nonleafNode, featureMeanProportionInterval, featureUpperBound, featureLowerBound):
     childrenOfNonleafNode = list(tree.successors(nonleafNode))
     childrenNodeNum = len(childrenOfNonleafNode)
     alphaDirichlet = 1
     
     parentMeanChangeFeature = tree.node[nonleafNode]['featureMeans'][changeFeature]
-    parentMeanHalfLengthFeatureChange = np.min((featureUpperBound[changeFeature] - parentMeanChangeFeature, parentMeanChangeFeature - featureLowerBound[changeFeature]))
-    parentMeanLengthChangeFeature = 2 * parentMeanHalfLengthFeatureChange
+    lengthFeatureChange = np.abs(featureUpperBound[changeFeature] - featureLowerBound[changeFeature]).values
     childrenIntervalsNoLimit = np.arange(featureMeanProportionInterval, 1, featureMeanProportionInterval)
-    childrenPossibleIntervalsGivenParentLength = list(filter(lambda x: math.isclose(sum(x), 1) == True, it.product(childrenIntervalsNoLimit, repeat = childrenNodeNum)))
-    priorChangeProportions = [stats.dirichlet.logpdf(childrenPossibleInterval, [alphaDirichlet] * childrenNodeNum) for childrenPossibleInterval in childrenPossibleIntervalsGivenParentLength]
-    childrenPossibleMeansChangeFeature = parentMeanChangeFeature.values - parentMeanHalfLengthFeatureChange + parentMeanLengthChangeFeature * np.array([childrenIntervals for childrenIntervals in childrenPossibleIntervalsGivenParentLength])
+    childrenPossibleIntervals = list(it.product(childrenIntervalsNoLimit, repeat = childrenNodeNum))
+    priorChangeProportions = [childrenNodeNum * math.log(1.0/lengthFeatureChange) for childrenPossibleInterval in childrenPossibleIntervals]
+    childrenPossibleMeansChangeFeature = featureLowerBound[changeFeature].values + lengthFeatureChange * np.array([childrenPossibleInterval for childrenPossibleInterval in childrenPossibleIntervals])
     featureNames = list(tree.node[1]['featureMeans'])
     featureMeans = list(map(lambda x: [x], tree.node[nonleafNode]['featureMeans'][:].values[0]))
-    possibleFeatureMeans = [[possibleMeanChangeFeature if featureIndex == featureNames.index(changeFeature) else featureMeans[featureIndex] for featureIndex in range(len(featureMeans))]for possibleMeanChangeFeature in childrenPossibleMeansChangeFeature]
+    possibleFeatureMeans = [[possibleMeanChangeFeature if featureIndex == featureNames.index(changeFeature) else featureMeans[featureIndex] for featureIndex in range(len(featureMeans))] for possibleMeanChangeFeature in childrenPossibleMeansChangeFeature]
     childrenPossibleFeatureMeans = [[pd.DataFrame([diffChildFeatureMean], columns = featureNames) for diffChildFeatureMean in list(it.product(*featureMeans))] for featureMeans in possibleFeatureMeans] 
 
     possibleFeaturedTrees = [mergeNewParameterIntoTrees(tree, childrenOfNonleafNode, childrenFeatureMeans, 'featureMeans', priorChangeProportion)  for childrenFeatureMeans, priorChangeProportion in zip(childrenPossibleFeatureMeans, priorChangeProportions)]
@@ -93,7 +112,7 @@ def mergeNewParameterIntoTrees(tree, children, childrenParameter, parameterName,
 
 def calOnePartitiedTreeLikelihood(partitiedTree, featuredTrees, texonsObserved, featureStdVarinces):
     leafPartitionParameterDfs = [generateDiffFeatureMeansPartitiedTree(partitiedTree, featuredTree) for featuredTree in featuredTrees]
-    partitiedFeaturedTreesP = [leafPartitionParameterDf.apply(calOneLeafPartitionLikelihoodLog, args = (texonsObserved, featureStdVarinces), axis = 1).sum() for leafPartitionParameterDf in leafPartitionParameterDfs]
+    partitiedFeaturedTreesP = [leafPartitionParameterDfs[featuredTreeIndex].apply(calOneLeafPartitionLikelihoodLog, args = (texonsObserved, featureStdVarinces), axis = 1).sum() + featuredTrees[featuredTreeIndex].node[1]['priorLog'] for featuredTreeIndex in range(len(featuredTrees))]
     partitiedTreeP = np.sum(list(map(np.exp, partitiedFeaturedTreesP)))
     return partitiedTreeP
 
@@ -148,7 +167,6 @@ def transTexonParameterToPolygenDrawArguemnt(texonsParameter):
         np.int_((texonsParameter['y'] - texonsParameter['lengthRotatedProjectY'] -
             texonsParameter['widthRotatedProjectY'])/2.0)))
     return  texonsParameter
-
 def visualize(partitiedTrees, texonsParameter, indexDecending, pList, i):    
     screen = pygame.display.set_mode([200, 160])
     screen.fill((0,0,0))
@@ -201,7 +219,7 @@ def main():
     featureLowerBound = featureStdVarinces * 3
     alphaDirichlet = 1
     
-    texonsObserved = pd.read_csv('demo2.csv')
+    texonsObserved = pd.read_csv('demo4.csv')
     print(datetime.datetime.now())
     generateDiffPartitiedTreesAndDiffFeaturedTrees = GenerateDiffPartitiedTreesAndDiffFeaturedTrees(partitonInterval, featureMeansProportionInterval, featureUpperBound, featureLowerBound)
     partitiedTrees, featuredTrees = generateDiffPartitiedTreesAndDiffFeaturedTrees(tree)
