@@ -6,13 +6,16 @@ import networkx as nx
 import math
 import pygame
 
-class GenerateDiffPartitiedTreesAndDiffFeaturedTrees():
-    def __init__(self, partitionInterval, alphaDirichlet):
+class GenerateDiffPartitiedTrees():
+    def __init__(self, partitionInterval, alphaDirichlet, imageWidth, imageHeight):
         self.generatePossiblePartitiedTreesCurrNonleafNodeAndCalPartitonLogPrior = GeneratePossiblePartitiedTreesCurrNonleafNodeAndCalPartitonLogPrior(alphaDirichlet)
         self.partitionInterval = partitionInterval
+        self.imageWidth = imageWidth
+        self.imageHeight = imageHeight
 
     def __call__(self, tree):
         tree.node[0]['partitionPriorLog'] = 0
+        tree.node[0]['partition'] = {'x': [0, self.imageWidth], 'y': [0, self.imageHeight]}
         directionNames = list(self.partitionInterval)
         nonleafNodes = [n for n,d in dict(tree.out_degree()).items() if d!=0]
         untilCurrNonleafNodePartitiedTrees = [tree]

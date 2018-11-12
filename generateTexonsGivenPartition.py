@@ -133,29 +133,25 @@ def main():
     maxDepth = 3 
     alphaDirichlet = 3.5    
 
-    imageWidth = 400
-    imageHeight = 300
-    gridLengthX = 25 
-    gridLengthY = 25
+    imageWidth = 320
+    imageHeight = 320
+    gridLengthX = 20 
+    gridLengthY = 20
     partitionInterval = {'x': gridLengthX, 'y': gridLengthY}
      
-    meansOfFeatureMeans = pd.DataFrame({'color': [0.5], 'length':[min(gridLengthX,
-       gridLengthY)/3], 'angleRotated': [math.pi/4], 'logWidthLengthRatio':
-       [-0.5]})
-    stdVarincesOfFeatureMeans = pd.DataFrame({'color': [0.4], 'length': [2.67], 'angleRotated':
-            [math.pi/6], 'logWidthLengthRatio': [-0.8] })
-    featureStdVarinces = pd.DataFrame({'color': [0.05], 'length': [0.67], 'angleRotated':
-            [math.pi/30], 'logWidthLengthRatio': [-0.1] })
-    featureUpperBound = 2*meansOfFeatureMeans - stdVarincesOfFeatureMeans * 3
-    featureLowerBound = stdVarincesOfFeatureMeans * 3
+    meansOfFeatureMeans = pd.DataFrame({'color': [0.5], 'length':[min(gridLengthX, gridLengthY)/3], 'angleRotated': [math.pi/2], 'logWidthLengthRatio': [-0.7]})
+    featureValueMax = meansOfFeatureMeans * 2
+    stdVarincesOfFeatureMeans = featureValueMax / 10 
+    featureStdVarinces = featureValueMax / 20
+    #stdVarincesOfFeatureMeans = pd.DataFrame({'color': [0.4], 'length': [2.67], 'angleRotated': [math.pi/6], 'logWidthLengthRatio': [-0.8] })
+    #featureStdVarinces = pd.DataFrame({'color': [0.05], 'length': [0.67], 'angleRotated': [math.pi/30], 'logWidthLengthRatio': [-0.1] })
    
     treeHypothesesSpace, treeHypothesesSpacePrior = generateTree.generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum)
     
     for imageIndex in range(imageNum):
         sampledTree = treeHypothesesSpace[list(np.random.multinomial(1, treeHypothesesSpacePrior)).index(1)]
-        sampledTree.node[0]['partition'] = {'x': [0, imageWidth], 'y': [0, imageHeight]}
 
-        generateDiffPartitiedTrees = generatePartition.GenerateDiffPartitiedTreesAndDiffFeaturedTrees(partitionInterval, alphaDirichlet)
+        generateDiffPartitiedTrees = generatePartition.GenerateDiffPartitiedTrees(partitionInterval, alphaDirichlet, imageWidth, imageHeight)
         partitionGivenTreeHypothesesSpace, partititionGivenTreeHypothesesSpacePrior = generateDiffPartitiedTrees(sampledTree)
         partitionNormalizedPrior = partititionGivenTreeHypothesesSpacePrior/sum(partititionGivenTreeHypothesesSpacePrior)
         sampledPartition = partitionGivenTreeHypothesesSpace[list(np.random.multinomial(1, partitionNormalizedPrior)).index(1)]

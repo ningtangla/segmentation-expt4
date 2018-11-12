@@ -106,6 +106,7 @@ def generateDiffFeatureMeansPartitiedTree(partitiedTree, featuredTree):
 
 
 def calOneLeafPartitionLikelihoodLog(row, texonsObserved, featureStdVarinces):
+    __import__('ipdb').set_trace()
     xMin, xMax = row['partition']['x']
     yMin, yMax = row['partition']['y']
     featureNames = featureStdVarinces.columns
@@ -201,7 +202,7 @@ def main():
     featureLowerBound = featureStdVarinces * 3
     alphaDirichlet = 1
     
-    texonsObserved = pd.read_csv('demo2.csv')
+    texonsObserved = pd.read_csv('~/segmentation-expt4/generate/demo2.csv')
     print(datetime.datetime.now())
     generateDiffPartitiedTreesAndDiffFeaturedTrees = GenerateDiffPartitiedTreesAndDiffFeaturedTrees(partitonInterval, featureMeansProportionInterval, featureUpperBound, featureLowerBound)
     partitiedTrees, featuredTrees = generateDiffPartitiedTreesAndDiffFeaturedTrees(tree)
