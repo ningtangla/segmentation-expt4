@@ -29,19 +29,19 @@ def calOnePartitionUnderOneChangeFeatureOrderLikelihoodLog(partition, texonsObse
     nodesParameterDf = pd.DataFrame([[meansOfChangeFeatureMeansOnDepthes[nodeDepth], stdVarincesOfChangeFeatureMeansOnDepthes[nodeDepth], changeFeatureStdVarincesOnDepthes[nodeDepth], changeFeaturesOnDepthes[nodeDepth]] for nodeDepth in partitionNodesDepthes], columns = ['meanOfChangeFeatureMean', 'stdVarinceOfChangeFeatureMean', 'changeFeatureStdVarince', 'changeFeature'])
     nodesParameterDf['x'] = [partition.node[node]['partition']['x'] for node in partitionNodes]
     nodesParameterDf['y'] = [partition.node[node]['partition']['y'] for node in partitionNodes]
-    #unchangedFeatureParameterDf = pd.DataFrame([[meansOfChangeFeatureMeansOnDepthes[nodeDepth], 0.001, changeFeatureStdVarincesOnDepthes[nodeDepth], changeFeaturesOnDepthes[nodeDepth]] for nodeDepth in unchangedFeaturesDepthes], columns = ['meanOfChangeFeatureMean', 'stdVarinceOfChangeFeatureMean', 'changeFeatureStdVarince', 'changeFeature'])
-    #unchangedFeatureParameterDf['x'] = [partition.node[0]['partition']['x'] for node in unchangedFeaturesDepthes]
-    #unchangedFeatureParameterDf['y'] = [partition.node[0]['partition']['y'] for node in unchangedFeaturesDepthes]
-    #parameterDf = pd.concat([nodesParameterDf, unchangedFeatureParameterDf])
-    #parameterDf['texonsLikelihoodLog'] = parameterDf.apply(calTexonsLikelihoodLog, args = (texonsObserved, 1), axis = 1)
-    nodesParameterDf['texonsLikelihoodLog'] = nodesParameterDf.apply(calTexonsLikelihoodLog, args = (texonsObserved, 1), axis = 1)
+    unchangedFeatureParameterDf = pd.DataFrame([[meansOfChangeFeatureMeansOnDepthes[nodeDepth], 0.001, changeFeatureStdVarincesOnDepthes[nodeDepth], changeFeaturesOnDepthes[nodeDepth]] for nodeDepth in unchangedFeaturesDepthes], columns = ['meanOfChangeFeatureMean', 'stdVarinceOfChangeFeatureMean', 'changeFeatureStdVarince', 'changeFeature'])
+    unchangedFeatureParameterDf['x'] = [partition.node[0]['partition']['x'] for node in unchangedFeaturesDepthes]
+    unchangedFeatureParameterDf['y'] = [partition.node[0]['partition']['y'] for node in unchangedFeaturesDepthes]
+    parameterDf = pd.concat([nodesParameterDf, unchangedFeatureParameterDf])
+    parameterDf['texonsLikelihoodLog'] = parameterDf.apply(calTexonsLikelihoodLog, args = (texonsObserved, 1), axis = 1)
+    #nodesParameterDf['texonsLikelihoodLog'] = nodesParameterDf.apply(calTexonsLikelihoodLog, args = (texonsObserved, 1), axis = 1)
     #nodesParameterDf['texonsChangeFeatureValuesMean'], nodesParameterDf['texonsNumInPartition'] = zip(*texonsObservedStats)
     #nodesParameterDf['conjugateVarinces'] = 1.0/(1.0/np.power(nodesParameterDf['stdVarinceOfChangeFeatureMean'], 2) + nodesParameterDf['texonsNumInPartition'] / np.power(nodesParameterDf['changeFeatureStdVarince'], 2))
     #nodesParameterDf['conjugateMean'] = (nodesParameterDf['meanOfChangeFeatureMean'] / np.power(nodesParameterDf['stdVarinceOfChangeFeatureMean'], 2) + nodesParameterDf['texonsChangeFeatureValuesMean'] * nodesParameterDf['texonsNumInPartition'] / np.power(nodesParameterDf['changeFeatureStdVarince'], 2)) * nodesParameterDf['conjugateVarinces']
 
-    texonsUnchangedFeaturesLikelihoodLog = [texonsObserved[changeFeaturesOnDepthes[unchangedFeatureMeanDepth]].apply(lambda x: stats.norm.logpdf(x, meansOfChangeFeatureMeansOnDepthes[unchangedFeatureMeanDepth], np.power(changeFeatureStdVarincesOnDepthes[unchangedFeatureMeanDepth], 2))) for unchangedFeatureMeanDepth in unchangedFeaturesDepthes]
-    #partitionLikelihoodLogUnderOneChangeFeatureOrder = nodesParameterDf['nodeTexonsChangedFeaturesLikelihoodLog'].sum() + np.sum(texonsUnchangedFeaturesLikelihoodLog)
-    partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(nodesParameterDf['texonsLikelihoodLog']) + np.sum(texonsUnchangedFeaturesLikelihoodLog)
+    #texonsUnchangedFeaturesLikelihoodLog = [texonsObserved[changeFeaturesOnDepthes[unchangedFeatureMeanDepth]].apply(lambda x: stats.norm.logpdf(x, meansOfChangeFeatureMeansOnDepthes[unchangedFeatureMeanDepth], np.power(changeFeatureStdVarincesOnDepthes[unchangedFeatureMeanDepth], 2))) for unchangedFeatureMeanDepth in unchangedFeaturesDepthes]
+    partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(parameterDf['texonsLikelihoodLog'])
+    #partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(nodesParameterDf['texonsLikelihoodLog']) + np.sum(texonsUnchangedFeaturesLikelihoodLog)
     return partitionLikelihoodLogUnderOneChangeFeatureOrder
 
 def calTexonsLikelihoodLog(row, texonsObserved, pandasOnlySupportArgNumBiggerTwoRowVectvize):
@@ -100,7 +100,7 @@ def main():
      
     meansOfFeatureMeans = pd.DataFrame({'color': [0.5], 'length':[min(gridLengthX, gridLengthY)/3], 'angleRotated': [math.pi/2], 'logWidthLengthRatio': [-0.7]})
     featureValueMax = meansOfFeatureMeans * 2
-    stdVarincesOfFeatureMeans = featureValueMax / 5 
+    stdVarincesOfFeatureMeans = featureValueMax * 100 
     featureStdVarinces = featureValueMax / 20
     treeHypothesesSpace, treeHypothesesSpacePrior = generateTree.generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum)
     
@@ -132,3 +132,4 @@ imageWidth, imageHeight, imageIndex)
     
 if __name__ == "__main__":
     main()
+
