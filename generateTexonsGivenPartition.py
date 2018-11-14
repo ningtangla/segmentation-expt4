@@ -8,30 +8,23 @@ import generateTreeWithPrior as generateTree
 import generatePartitionGivenTreeWithPrior  as generatePartition
 
 class SampleNodesFeatureMeans():
-    def __init__(self, meanOfFeatureMeans, stdVarincesOfFeatureMeans):
-        self.meanOfFeatureMeans = meanOfFeatureMeans
-        self.stdVarincesOfFeatureMeans = stdVarincesOfFeatureMeans
+    def __init__(self, allFeatureMeans):
+        self.allFeatureMeans = allFeatureMeans
 
     def __call__(self, tree):
-        nonleafNodes = [n for n,d in dict(tree.out_degree()).items() if d!=0]
-        featureIndex = self.meanOfFeatureMeans.columns.values
+        nonRootNodes = [n for n,d in dict(tree.in_degree()).items() if d!=0]
+        featureIndex = self.allFeatureMeans.columns.values
         featureName = featureIndex.copy()
         np.random.shuffle(featureName)
-        treeNodes = list(tree.nodes)
-        treeNodesDepthes = [tree.node[treeNode]['depth'] for treeNode in treeNodes]
-        changeFeatures = [featureName[changeFeatureIndex] for changeFeatureIndex in treeNodesDepthes]
-        meansOfChangeFeatureMeans = [self.meanOfFeatureMeans[changeFeature] for changeFeature in changeFeatures]
-        stdVarincesOfChangeFeatureMeans = [self.stdVarincesOfFeatureMeans[changeFeature] for changeFeature in changeFeatures]
-        
-        featureMeansInNodes = [np.random.normal(meanOfChangeFeatureMean, stdVarinceOfFeatureMean**2) for meanOfChangeFeatureMean, stdVarinceOfFeatureMean in zip(meansOfChangeFeatureMeans, stdVarincesOfChangeFeatureMeans)]
-        print(featureMeansInNodes)
-        for node in treeNodes:
+        nonRootNodesDepthes = [tree.node[treeNode]['depth'] for treeNode in nonRootNodes]
+        changeFeatures = [featureName[changeFeatureIndex % len(featureIndex)] for changeFeatureIndex in nonRootNodesDepthes]
+        nodesPossibleChangeFeatureMeans = [self.allFeatureMeans[changeFeature] for changeFeature in changeFeatures]
+        for node in nonRootNodes:
             parentNode = list(tree.predecessors(node))
-            if parentNode:
-                parentFeatureMeans = tree.node[parentNode[0]]['featureMeans'][:].copy()
-            else:
-                parentFeatureMeans = self.meanOfFeatureMeans.copy()
-            parentFeatureMeans[changeFeatures[treeNodes.index(node)]] = featureMeansInNodes[treeNodes.index(node)]
+            parentFeatureMeans = tree.node[parentNode[0]]['featureMeans'][:].copy()
+            possibleChangeFeatureMeans = nodesPossibleChangeFeatureMeans[nonRootNodes.index(node)]
+            parentFeatureMeans[changeFeatures[nonRootNodes.index(node)]] = possibleChangeFeatureMeans[np.random.randint(len(possibleChangeFeatureMeans))]
+            #print(parentFeatureMeans, tree.node[node]['partition'], nonRootNodes, nonRootNodesDepthes)
             tree.node[node]['featureMeans'] = parentFeatureMeans.copy()
         return tree
 
@@ -69,7 +62,10 @@ class SampleTexonsLocationsAndFeatures():
         
         return texonsParameter
 
-def transTexonParameterToPolygenDrawArguemnt(texonsParameter):
+def transTexonParameterToPolygenDrawArguemnt(texonsParameter, featuresScale):
+    featureNames = list(featuresScale)
+    for featureName in featureNames:
+        texonsParameter[featureName] = texonsParameter[featureName] * featuresScale[featureName].values
     texonsParameter['width'] = texonsParameter['length'] * np.power(np.e, texonsParameter['logWidthLengthRatio'])
     texonsParameter['lengthRotatedProjectX'] = texonsParameter['length'] * np.cos(texonsParameter['angleRotated'])
     texonsParameter['widthRotatedProjectX'] = texonsParameter['width'] * np.sin(texonsParameter['angleRotated']) 
@@ -135,14 +131,19 @@ def main():
 
     imageWidth = 320
     imageHeight = 320
-    gridLengthX = 20 
-    gridLengthY = 20
+    gridLengthX = 40 
+    gridLengthY = 40
     partitionInterval = {'x': gridLengthX, 'y': gridLengthY}
      
-    meansOfFeatureMeans = pd.DataFrame({'color': [0.5], 'length':[min(gridLengthX, gridLengthY)/3], 'angleRotated': [math.pi/2], 'logWidthLengthRatio': [-0.7]})
-    featureValueMax = meansOfFeatureMeans * 2
-    stdVarincesOfFeatureMeans = featureValueMax / 10 
-    featureStdVarinces = featureValueMax / 20
+    featuresScale = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]})
+    "represent featureValue as proportion in range(0, 1) to normalized the diff feature dimension range "
+    featureMeanIntevel = 0.1 
+    featureStdVarince = 0.05
+    featurePossibleMeans = np.arange(0.05 + 2 * featureStdVarince, 0.951 - 2 * featureStdVarince, featureMeanIntevel)
+    
+    allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featuresScale)) for featureMean in featurePossibleMeans], columns = list(featuresScale))
+    featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featuresScale))], columns = list(featuresScale))
+    featurePossibleMeansNum = len(featurePossibleMeans)
     #stdVarincesOfFeatureMeans = pd.DataFrame({'color': [0.4], 'length': [2.67], 'angleRotated': [math.pi/6], 'logWidthLengthRatio': [-0.8] })
     #featureStdVarinces = pd.DataFrame({'color': [0.05], 'length': [0.67], 'angleRotated': [math.pi/30], 'logWidthLengthRatio': [-0.1] })
    
@@ -150,22 +151,26 @@ def main():
     
     for imageIndex in range(imageNum):
         sampledTree = treeHypothesesSpace[list(np.random.multinomial(1, treeHypothesesSpacePrior)).index(1)]
-
+        rootNodeFeaturesMeanList = [allDiscreteUniformFeaturesMeans[feature][np.random.randint(featurePossibleMeansNum)] for feature in list(featuresScale)]
+        rootNodeFeaturesMean = pd.DataFrame([rootNodeFeaturesMeanList], columns = list(featuresScale))
+        sampledTree.node[0]['featureMeans'] = rootNodeFeaturesMean
+        
         generateDiffPartitiedTrees = generatePartition.GenerateDiffPartitiedTrees(partitionInterval, alphaDirichlet, imageWidth, imageHeight)
         partitionGivenTreeHypothesesSpace, partititionGivenTreeHypothesesSpacePrior = generateDiffPartitiedTrees(sampledTree)
         partitionNormalizedPrior = partititionGivenTreeHypothesesSpacePrior/sum(partititionGivenTreeHypothesesSpacePrior)
         sampledPartition = partitionGivenTreeHypothesesSpace[list(np.random.multinomial(1, partitionNormalizedPrior)).index(1)]
 
-        sampleNodesFeatureMeans = SampleNodesFeatureMeans(meansOfFeatureMeans, stdVarincesOfFeatureMeans)
+        sampleNodesFeatureMeans = SampleNodesFeatureMeans(allDiscreteUniformFeaturesMeans)
         sampledFeatureMeansInPartitions = sampleNodesFeatureMeans(sampledPartition)
         leafPartitionParameterDf = makeLeafNodeParametersDataFrameWithPartitionAndFeatureMean(sampledFeatureMeansInPartitions)
 
-        sampleTexonsGivenPartitionsAndFeatureMeans = SampleTexonsLocationsAndFeatures(gridLengthX, gridLengthY, featureStdVarinces)
+        sampleTexonsGivenPartitionsAndFeatureMeans = SampleTexonsLocationsAndFeatures(gridLengthX, gridLengthY, featuresStdVarince)
         partitionXTotal, partitionYTotal, partitionFeatureMeansTotal = leafPartitionParameterDf['x'], leafPartitionParameterDf['y'], leafPartitionParameterDf.drop(['x','y'],axis = 1)
         texonsParameterTotal = pd.concat([sampleTexonsGivenPartitionsAndFeatureMeans(partitionXTotal.iloc[partitionIndex], partitionYTotal.iloc[partitionIndex], partitionFeatureMeansTotal.iloc[partitionIndex]) for partitionIndex in range(len(leafPartitionParameterDf))], ignore_index = True)
 
-        texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal)
+        texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal, featuresScale)
         visualizeTexons = VisualizeTexonsAndPartitionTruth(imageWidth, imageHeight)
+        texonsParameterTotal.to_csv('~/segmentation-expt4/generate/demoUnscaled' + str(imageIndex) + '.csv')
         texonsParameterDrawing.to_csv('~/segmentation-expt4/generate/demo' + str(imageIndex) + '.csv')
         visualizeTexons(texonsParameterDrawing, sampledPartition, imageIndex) 
 
