@@ -45,14 +45,16 @@ class GeneratePossiblePartitiedTreesCurrNonleafNodeAndCalPartitonLogPrior():
             
             childrenIntervalsNoLimit = np.arange(lengthIntervalDirection, parentPartitionLengthChangeDirection, lengthIntervalDirection)
             childrenPossibleIntervalsGivenParentLength = list(filter(lambda x: math.isclose(sum(x), parentPartitionLengthChangeDirection) == True, it.product(childrenIntervalsNoLimit, repeat = childrenNodeNum)))
-            partitionProportionsLogPriors = [stats.dirichlet.logpdf(np.array(childrenPossibleInterval)/parentPartitionLengthChangeDirection, [self.alphaDirichlet] * childrenNodeNum) for childrenPossibleInterval in childrenPossibleIntervalsGivenParentLength]
-            
-            childrenPossiblePartitionDirection = parentPartitionMinDirection + np.array([[[sum(childrenIntervals[:childrenIndex]), sum(childrenIntervals[:childrenIndex + 1])] for childrenIndex in range(len(childrenIntervals))] for childrenIntervals in childrenPossibleIntervalsGivenParentLength])
-            directionPartitions = list(map(lambda x: [x], tree.node[nonleafNode]['partition'].values()))
-            possiblePartitions = [[possiblePartitionChangeDirection if directionIndex == directionNames.index(changeDirection) else directionPartitions[directionIndex] for directionIndex in range(len(directionPartitions))] for possiblePartitionChangeDirection in childrenPossiblePartitionDirection]
-            childrenPossiblePartitions = [[dict(zip(directionNames, diffChildPartition)) for diffChildPartition in list(it.product(*partitions))] for partitions in possiblePartitions] 
-            possiblePartitiedTrees = [mergeNewParameterIntoTrees(tree, childrenOfNonleafNode, childrenPartitions, 'partition', partitionProportionLogPrior) for childrenPartitions, partitionProportionLogPrior in zip(childrenPossiblePartitions, partitionProportionsLogPriors)]
-            newPossiblePartitiedTrees.extend(possiblePartitiedTrees)
+            if childrenPossibleIntervalsGivenParentLength != []:
+                print(changeDirection, childrenPossibleIntervalsGivenParentLength)
+                partitionProportionsLogPriors = [stats.dirichlet.logpdf(np.array(childrenPossibleInterval)/parentPartitionLengthChangeDirection, [self.alphaDirichlet] * childrenNodeNum) for childrenPossibleInterval in childrenPossibleIntervalsGivenParentLength]
+                
+                childrenPossiblePartitionDirection = parentPartitionMinDirection + np.array([[[sum(childrenIntervals[:childrenIndex]), sum(childrenIntervals[:childrenIndex + 1])] for childrenIndex in range(len(childrenIntervals))] for childrenIntervals in childrenPossibleIntervalsGivenParentLength])
+                directionPartitions = list(map(lambda x: [x], tree.node[nonleafNode]['partition'].values()))
+                possiblePartitions = [[possiblePartitionChangeDirection if directionIndex == directionNames.index(changeDirection) else directionPartitions[directionIndex] for directionIndex in range(len(directionPartitions))] for possiblePartitionChangeDirection in childrenPossiblePartitionDirection]
+                childrenPossiblePartitions = [[dict(zip(directionNames, diffChildPartition)) for diffChildPartition in list(it.product(*partitions))] for partitions in possiblePartitions] 
+                possiblePartitiedTrees = [mergeNewParameterIntoTrees(tree, childrenOfNonleafNode, childrenPartitions, 'partition', partitionProportionLogPrior) for childrenPartitions, partitionProportionLogPrior in zip(childrenPossiblePartitions, partitionProportionsLogPriors)]
+                newPossiblePartitiedTrees.extend(possiblePartitiedTrees)
         return newPossiblePartitiedTrees
 
 def mergeNewParameterIntoTrees(tree, children, childrenParameter, parameterName, parameterPrior):

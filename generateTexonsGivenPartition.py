@@ -62,10 +62,11 @@ class SampleTexonsLocationsAndFeatures():
         
         return texonsParameter
 
-def transTexonParameterToPolygenDrawArguemnt(texonsParameter, featuresScale):
-    featureNames = list(featuresScale)
+def transTexonParameterToPolygenDrawArguemnt(texonsUnscaledParameter, featureMappingScaleFromPropotionToValue):
+    texonsParameter = texonsUnscaledParameter.copy()
+    featureNames = list(featureMappingScaleFromPropotionToValue)
     for featureName in featureNames:
-        texonsParameter[featureName] = texonsParameter[featureName] * featuresScale[featureName].values
+        texonsParameter[featureName] = texonsParameter[featureName] * featureMappingScaleFromPropotionToValue[featureName].values
     texonsParameter['width'] = texonsParameter['length'] * np.power(np.e, texonsParameter['logWidthLengthRatio'])
     texonsParameter['lengthRotatedProjectX'] = texonsParameter['length'] * np.cos(texonsParameter['angleRotated'])
     texonsParameter['widthRotatedProjectX'] = texonsParameter['width'] * np.sin(texonsParameter['angleRotated']) 
@@ -134,15 +135,17 @@ def main():
     gridLengthX = 40 
     gridLengthY = 40
     partitionInterval = {'x': gridLengthX, 'y': gridLengthY}
-     
-    featuresScale = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]})
-    "represent featureValue as proportion in range(0, 1) to normalized the diff feature dimension range "
-    featureMeanIntevel = 0.1 
-    featureStdVarince = 0.05
-    featurePossibleMeans = np.arange(0.05 + 2 * featureStdVarince, 0.951 - 2 * featureStdVarince, featureMeanIntevel)
     
-    allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featuresScale)) for featureMean in featurePossibleMeans], columns = list(featuresScale))
-    featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featuresScale))], columns = list(featuresScale))
+    featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
+    featureProportionScale = 4
+    featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
+    "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
+    featureMeanIntevel = 0.1 * featureProportionScale
+    featureStdVarince = 0.05 * featureProportionScale
+    featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
+    
+    allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
+    featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
     featurePossibleMeansNum = len(featurePossibleMeans)
     #stdVarincesOfFeatureMeans = pd.DataFrame({'color': [0.4], 'length': [2.67], 'angleRotated': [math.pi/6], 'logWidthLengthRatio': [-0.8] })
     #featureStdVarinces = pd.DataFrame({'color': [0.05], 'length': [0.67], 'angleRotated': [math.pi/30], 'logWidthLengthRatio': [-0.1] })
@@ -151,8 +154,8 @@ def main():
     
     for imageIndex in range(imageNum):
         sampledTree = treeHypothesesSpace[list(np.random.multinomial(1, treeHypothesesSpacePrior)).index(1)]
-        rootNodeFeaturesMeanList = [allDiscreteUniformFeaturesMeans[feature][np.random.randint(featurePossibleMeansNum)] for feature in list(featuresScale)]
-        rootNodeFeaturesMean = pd.DataFrame([rootNodeFeaturesMeanList], columns = list(featuresScale))
+        rootNodeFeaturesMeanList = [allDiscreteUniformFeaturesMeans[feature][np.random.randint(featurePossibleMeansNum)] for feature in list(featureMappingScaleFromPropotionToValue)]
+        rootNodeFeaturesMean = pd.DataFrame([rootNodeFeaturesMeanList], columns = list(featureMappingScaleFromPropotionToValue))
         sampledTree.node[0]['featureMeans'] = rootNodeFeaturesMean
         
         generateDiffPartitiedTrees = generatePartition.GenerateDiffPartitiedTrees(partitionInterval, alphaDirichlet, imageWidth, imageHeight)
@@ -168,7 +171,7 @@ def main():
         partitionXTotal, partitionYTotal, partitionFeatureMeansTotal = leafPartitionParameterDf['x'], leafPartitionParameterDf['y'], leafPartitionParameterDf.drop(['x','y'],axis = 1)
         texonsParameterTotal = pd.concat([sampleTexonsGivenPartitionsAndFeatureMeans(partitionXTotal.iloc[partitionIndex], partitionYTotal.iloc[partitionIndex], partitionFeatureMeansTotal.iloc[partitionIndex]) for partitionIndex in range(len(leafPartitionParameterDf))], ignore_index = True)
 
-        texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal, featuresScale)
+        texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal, featureMappingScaleFromPropotionToValue)
         visualizeTexons = VisualizeTexonsAndPartitionTruth(imageWidth, imageHeight)
         texonsParameterTotal.to_csv('~/segmentation-expt4/generate/demoUnscaled' + str(imageIndex) + '.csv')
         texonsParameterDrawing.to_csv('~/segmentation-expt4/generate/demo' + str(imageIndex) + '.csv')

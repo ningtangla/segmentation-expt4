@@ -105,19 +105,25 @@ def calGuestsPossibleCombinationsNumForGuestsAssignment(guestsAssignment):
 def removeRepeatChildNodeAndMapPriorsToNewTrees(uniqueRepeatChildTrees, uniqueRepeatChildTreesPriors):
     noRepeatChildTrees = []
     noRepeatChildTreesPriors = []
-    noRepeatChildTreesGuestsAssignments = []
+    noRepeatChildTreesNodesSituations = []
     for uniqueRepeatChildTree in uniqueRepeatChildTrees:
         noRepeatChildTree = removeRepeatChildNode(uniqueRepeatChildTree)
-        noRepeatChildTreeGuestsAssignment = calGuestsNumInChildrenOfNonLeafNodes(noRepeatChildTree)
+        noRepeatChildTreeGuestsAssignment = calChildrenNumOfNodes(noRepeatChildTree)
         repeatChildTreeIndex = uniqueRepeatChildTrees.index(uniqueRepeatChildTree) 
-        if noRepeatChildTreeGuestsAssignment in noRepeatChildTreesGuestsAssignments:
-            noRepeatChildTreeIndex = noRepeatChildTreesGuestsAssignments.index(noRepeatChildTreeGuestsAssignment)
+        if noRepeatChildTreeGuestsAssignment in noRepeatChildTreesNodesSituations:
+            noRepeatChildTreeIndex = noRepeatChildTreesNodesSituations.index(noRepeatChildTreeGuestsAssignment)
             noRepeatChildTreesPriors[noRepeatChildTreeIndex] = noRepeatChildTreesPriors[noRepeatChildTreeIndex] + uniqueRepeatChildTreesPriors[repeatChildTreeIndex]
         else:
             noRepeatChildTrees.extend([noRepeatChildTree])
-            noRepeatChildTreesGuestsAssignments.extend([noRepeatChildTreeGuestsAssignment])
+            noRepeatChildTreesNodesSituations.extend([noRepeatChildTreeGuestsAssignment])
             noRepeatChildTreesPriors.extend([uniqueRepeatChildTreesPriors[repeatChildTreeIndex]])
+        #print(uniqueRepeatChildTree, noRepeatChildTreesPriors, noRepeatChildTreesNodesSituations)
     return noRepeatChildTrees, noRepeatChildTreesPriors 
+
+def calChildrenNumOfNodes(tree):
+    nodes = list(tree.nodes)
+    childrenNumOfNodes = [len(list(tree.successors(node))) for node in nodes]
+    return childrenNumOfNodes
 
 def removeRepeatChildNode(tree):
     currNode = 0
