@@ -46,7 +46,7 @@ class GeneratePossiblePartitiedTreesCurrNonleafNodeAndCalPartitonLogPrior():
             childrenIntervalsNoLimit = np.arange(lengthIntervalDirection, parentPartitionLengthChangeDirection, lengthIntervalDirection)
             childrenPossibleIntervalsGivenParentLength = list(filter(lambda x: math.isclose(sum(x), parentPartitionLengthChangeDirection) == True, it.product(childrenIntervalsNoLimit, repeat = childrenNodeNum)))
             if childrenPossibleIntervalsGivenParentLength != []:
-                print(changeDirection, childrenPossibleIntervalsGivenParentLength)
+                #print(changeDirection, childrenPossibleIntervalsGivenParentLength)
                 partitionProportionsLogPriors = [stats.dirichlet.logpdf(np.array(childrenPossibleInterval)/parentPartitionLengthChangeDirection, [self.alphaDirichlet] * childrenNodeNum) for childrenPossibleInterval in childrenPossibleIntervalsGivenParentLength]
                 
                 childrenPossiblePartitionDirection = parentPartitionMinDirection + np.array([[[sum(childrenIntervals[:childrenIndex]), sum(childrenIntervals[:childrenIndex + 1])] for childrenIndex in range(len(childrenIntervals))] for childrenIntervals in childrenPossibleIntervalsGivenParentLength])
