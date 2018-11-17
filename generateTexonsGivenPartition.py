@@ -42,10 +42,7 @@ class SampleTexonsLocationsAndFeatures():
         self.gridLengthY = gridLengthY
         self.featureStdVarinces = featureStdVarinces
         self.featureProportionScale = featureProportionScale
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
+    
     def __call__(self, partitionX, partitionY, partitionFeatureMeans):
         partitionXMin, partitionXMax = partitionX    
         partitionYMin, partitionYMax = partitionY
@@ -58,11 +55,7 @@ class SampleTexonsLocationsAndFeatures():
         locationCenters = np.array(list(it.product(locationXCenters, locationYCenters)))
         texonsLocation = locationCenters + locationNoises
         texonsFeaturesValue = np.array([sampleTexonsFeatureValue(partitionFeatureMeans[featureName], self.featureStdVarinces[featureName], gridNumPartition) for featureName in partitionFeatureMeans.index]).T
-<<<<<<< HEAD
         while (np.any(texonsFeaturesValue <= 0) or np.any(texonsFeaturesValue >= self.featureProportionScale)): 
-=======
-        while (np.any(texonsFeaturesValue <=0) or np.any(texonsFeaturesValue >= self.featureProportionScale)):
->>>>>>> origin/master
             texonsFeaturesValue = np.array([sampleTexonsFeatureValue(partitionFeatureMeans[featureName], self.featureStdVarinces[featureName], gridNumPartition) for featureName in partitionFeatureMeans.index]).T
         texonsFeatureParameter = pd.DataFrame(texonsFeaturesValue, columns = partitionFeatureMeans.index)
         texonsLocationParameter = pd.DataFrame(texonsLocation, columns = ['x', 'y'])
@@ -139,34 +132,21 @@ def main():
     maxDepth = 4 
     alphaDirichlet = 3.5    
 
-<<<<<<< HEAD
     imageWidth = 960
     imageHeight = 960
     gridLengthX = 60 
     gridLengthY = 60
     gridForPartitionRate = 4
-=======
-    imageWidth = 400
-    imageHeight = 400
-    gridLengthX = 40 
-    gridLengthY = 40
-    gridForPartitionRate = 2
->>>>>>> origin/master
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
     
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
     featureProportionScale = 0.5
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
+    
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-<<<<<<< HEAD
     featureMeanIntevel = 0.1 * featureProportionScale
     featureStdVarince = 0.1 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
-=======
-    featureMeanIntevel = 0.2 * featureProportionScale 
-    featureStdVarince = 0.1 * featureProportionScale
-    featurePossibleMeans = np.arange(2.5 * featureStdVarince , featureProportionScale - 2.5 * featureStdVarince + 0.001, featureMeanIntevel) 
->>>>>>> origin/master
     
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))

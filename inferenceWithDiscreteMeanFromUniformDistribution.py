@@ -61,10 +61,6 @@ def calTexonsLikelihoodLog(row, texonsObserved, pandasOnlySupportArgNumBiggerTwo
     texonsFeatureValueLikelihoodLogOnDiffFeatureMean = [sum(stats.norm.logpdf(observedTexonsFeatureValues, featureMean, featureValueStdVarince)) - np.log(10)  for featureMean in featureDiscreteMean]
     texonsFeatureValueLikelihoodLog = max(texonsFeatureValueLikelihoodLogOnDiffFeatureMean)
     return texonsFeatureValueLikelihoodLog, featureDiscreteMean[texonsFeatureValueLikelihoodLogOnDiffFeatureMean.index(texonsFeatureValueLikelihoodLog)]
-=======
-    texonsFeatureValueLikelihoodLog = sum(stats.norm.logpdf(observedTexonsFeatureValues, featureDiscreteMean, featureValueStdVarince))
-    return texonsFeatureValueLikelihoodLog
->>>>>>> origin/master
 
 class VisualizePossiblePartition():
     def __init__(self, widthImage, heightImage, imageIndex):
@@ -90,7 +86,6 @@ class VisualizePossiblePartition():
 def main():
     imageNum = 5 
 
-<<<<<<< HEAD
     treeNum = 1000
     gamma = 1
     maxDepth = 4 
@@ -101,40 +96,17 @@ def main():
     gridLengthX = 60 
     gridLengthY = 60
     gridForPartitionRate = 4
-=======
-    treeNum = 100
-    gamma = 0.9
-    maxDepth = 3 
-    alphaDirichlet = 3.3    
-
-    imageWidth = 400
-    imageHeight = 400
-    gridLengthX = 40 
-    gridLengthY = 40
-    gridForPartitionRate = 2
->>>>>>> origin/master
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
      
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
     featureProportionScale = 0.5
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-<<<<<<< HEAD
     featureMeanIntevel = 0.1 * featureProportionScale
     featureStdVarince = 0.1 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
-
-=======
-    featureMeanIntevel = 0.2 * featureProportionScale
-    featureStdVarince = 0.1 * featureProportionScale
-    possibleFeatureMeans = np.arange(2.5 * featureStdVarince, featureProportionScale - 2.5 * featureStdVarince + 0.001, featureMeanIntevel) 
-    #allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in possibleFeatureMeans], columns = list(featureMappingScaleFromPropotionToValue))
-    featureStdVarinces = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
-    
-    possibleChangeFeatureOrderCombinations = list(it.permutations(list(featureStdVarinces)))
->>>>>>> origin/master
 
     treeHypothesesSpace, treeHypothesesSpacePrior = generateTree.generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum)
     
