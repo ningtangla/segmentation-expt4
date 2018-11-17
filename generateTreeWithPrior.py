@@ -7,6 +7,7 @@ import math
 import operator as op
 from scipy import misc
 import matplotlib.pyplot as pyplot
+from scipy.special import gamma as gammaFunction
 
 def generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum):
     trees = [sampleTreeUsingNestedChinsesResturantProcess(gamma, maxDepth) for treeIndex in range(treeNum)]
@@ -89,7 +90,7 @@ def calGuestsNumInChildrenOfNonLeafNodes(tree):
 
 def calNonLeafNodePrior(guestsNumInChildrenOfNonLeafNode, gamma):
     guestsNumTotal = sum(guestsNumInChildrenOfNonLeafNode)
-    basicProbabiltyOfGuestsAssignmentIgnoreOrder = ft.reduce(op.mul, [math.factorial(guestsNumOneTable - gamma) for guestsNumOneTable in guestsNumInChildrenOfNonLeafNode])/math.factorial(guestsNumTotal)
+    basicProbabiltyOfGuestsAssignmentIgnoreOrder = ft.reduce(op.mul, [gammaFunction(guestsNumOneTable + 1 - gamma) for guestsNumOneTable in guestsNumInChildrenOfNonLeafNode])/math.factorial(guestsNumTotal)
     possibleGuestsAssignments = list(set(it.permutations(guestsNumInChildrenOfNonLeafNode)))
     guestsPossibleCombinationsNumForAllEqualFormsAssignment = ft.reduce(op.add, [calGuestsPossibleCombinationsNumForGuestsAssignment(guestsAssignment) for guestsAssignment in possibleGuestsAssignments])
     totalProbalilityForOneAssignmentIgnorParticularGuests = basicProbabiltyOfGuestsAssignmentIgnoreOrder * guestsPossibleCombinationsNumForAllEqualFormsAssignment 
