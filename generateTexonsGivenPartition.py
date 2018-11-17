@@ -17,7 +17,7 @@ class SampleNodesFeatureMeans():
         featureName = featureIndex.copy()
         np.random.shuffle(featureName)
         nonRootNodesDepthes = [tree.node[treeNode]['depth'] for treeNode in nonRootNodes]
-        changeFeatures = [featureName[changeFeatureIndex % len(featureIndex)] for changeFeatureIndex in nonRootNodesDepthes]
+        changeFeatures = [featureName[changeFeatureIndex - 1] for changeFeatureIndex in nonRootNodesDepthes]
         nodesPossibleChangeFeatureMeans = [self.allFeatureMeans[changeFeature] for changeFeature in changeFeatures]
         for node in nonRootNodes:
             parentNode = list(tree.predecessors(node))

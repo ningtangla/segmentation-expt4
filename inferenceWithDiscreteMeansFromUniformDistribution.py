@@ -25,16 +25,29 @@ class CalOnePartitionLikelihoodLog():
 def calOnePartitionUnderOneChangeFeatureOrderLikelihoodLog(partition, texonsObserved, changeFeatureDiscreteMeansOnDepthes, changeFeatureStdVarincesOnDepthes, changeFeaturesOnDepthes):
     partitionNodes = list(partition.nodes())
     partitionNodesDepthes = [partition.node[partitionNode]['depth'] for partitionNode in partitionNodes]
-    unchangedFeaturesDepthes = range(max(partitionNodesDepthes) + 1, len(changeFeaturesOnDepthes))
+    depthMax = max(partitionNodesDepthes)
     changeFeaturesParameterDf = pd.DataFrame([[changeFeatureDiscreteMeansOnDepthes[nodeDepth].values, changeFeatureStdVarincesOnDepthes[nodeDepth].values, changeFeaturesOnDepthes[nodeDepth]] for nodeDepth in partitionNodesDepthes], columns = ['featureDiscreteMean', 'featureStdVarince', 'feature'])
     changeFeaturesParameterDf['x'] = [partition.node[node]['partition']['x'] for node in partitionNodes]
     changeFeaturesParameterDf['y'] = [partition.node[node]['partition']['y'] for node in partitionNodes]
+    
+    leafNodes = [n for n,d in dict(partition.out_degree()).items() if d==0]
+    notDeepstLeafNodes = list(it.chain(*[[leafNode] * (depthMax - partition.node[leafNode]['depth'])  for leafNode in leafNodes]))
+    notDeepstLeafNodesDepthes = list(it.chain(*[range(partition.node[leafNode]['depth'], depthMax)  for leafNode in leafNodes]))
+    changeFeaturesNodesUnchangeFeatureParameterDf = pd.DataFrame([[changeFeatureDiscreteMeansOnDepthes[nodeDepth].values, changeFeatureStdVarincesOnDepthes[nodeDepth].values, changeFeaturesOnDepthes[nodeDepth + 1]] for nodeDepth in notDeepstLeafNodesDepthes], columns = ['featureDiscreteMean', 'featureStdVarince', 'feature'])
+    changeFeaturesNodesUnchangeFeatureParameterDf['x'] = [partition.node[node]['partition']['x'] for node in notDeepstLeafNodes]
+    changeFeaturesNodesUnchangeFeatureParameterDf['y'] = [partition.node[node]['partition']['y'] for node in notDeepstLeafNodes]
+    
+    unchangedFeaturesDepthes = range(depthMax + 1, len(changeFeaturesOnDepthes))
     unchangeFeaturesParameterDf = pd.DataFrame([[changeFeatureDiscreteMeansOnDepthes[nodeDepth].values, changeFeatureStdVarincesOnDepthes[nodeDepth].values, changeFeaturesOnDepthes[nodeDepth]] for nodeDepth in unchangedFeaturesDepthes], columns = ['featureDiscreteMean', 'featureStdVarince', 'feature'])
     unchangeFeaturesParameterDf['x'] = [partition.node[0]['partition']['x'] for node in unchangedFeaturesDepthes]
     unchangeFeaturesParameterDf['y'] = [partition.node[0]['partition']['y'] for node in unchangedFeaturesDepthes]
-    parameterDf = pd.concat([changeFeaturesParameterDf, unchangeFeaturesParameterDf])
+    parameterDf = pd.concat([changeFeaturesParameterDf, changeFeaturesNodesUnchangeFeatureParameterDf, unchangeFeaturesParameterDf])
+    
+#    if depthMax == 3:
+#        print(parameterDf)
     texonsStates = parameterDf.apply(calTexonsLikelihoodLog, args = (texonsObserved, 1), axis = 1)
     parameterDf['texonsFeatureValueLikelihoodLog'], parameterDf['bestFeatureMean'] = zip(*texonsStates)
+    partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(parameterDf['texonsFeatureValueLikelihoodLog'])
     #nodesParameterDf['texonsLikelihoodLog'] = nodesParameterDf.apply(calTexonsLikelihoodLog, args = (texonsObserved, 1), axis = 1)
     #nodesParameterDf['texonsChangeFeatureValuesMean'], nodesParameterDf['texonsNumInPartition'] = zip(*texonsObservedStats)
     #nodesParameterDf['conjugateVarinces'] = 1.0/(1.0/np.power(nodesParameterDf['stdVarinceOfChangeFeatureMean'], 2) + nodesParameterDf['texonsNumInPartition'] / np.power(nodesParameterDf['changeFeatureStdVarince'], 2))
@@ -42,7 +55,7 @@ def calOnePartitionUnderOneChangeFeatureOrderLikelihoodLog(partition, texonsObse
 
     #texonsUnchangedFeaturesLikelihoodLog = [texonsObserved[changeFeaturesOnDepthes[unchangedFeatureMeanDepth]].apply(lambda x: stats.norm.logpdf(x, meansOfChangeFeatureMeansOnDepthes[unchangedFeatureMeanDepth], np.power(changeFeatureStdVarincesOnDepthes[unchangedFeatureMeanDepth], 2))) for unchangedFeatureMeanDepth in unchangedFeaturesDepthes]
 
-    partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(parameterDf['texonsFeatureValueLikelihoodLog'])
+    #partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(parameterDf['texonsFeatureValueLikelihoodLog'])
     #partitionLikelihoodLogUnderOneChangeFeatureOrder = np.sum(nodesParameterDf['texonsLikelihoodLog']) + np.sum(texonsUnchangedFeaturesLikelihoodLog)
     return partitionLikelihoodLogUnderOneChangeFeatureOrder, parameterDf
 
@@ -54,7 +67,7 @@ def calTexonsLikelihoodLog(row, texonsObserved, pandasOnlySupportArgNumBiggerTwo
     texonsInPartition = texonsObserved[(texonsObserved['centerX'] > xMin) & (texonsObserved['centerX'] < xMax) & (texonsObserved['centerY'] > yMin) & (texonsObserved['centerY'] < yMax)]
     featureValueStdVarince = row['featureStdVarince'][0]
     observedTexonsFeatureValues = texonsInPartition[feature].values
-    texonsFeatureValueLikelihoodLogOnDiffFeatureMean = [sum(stats.norm.logpdf(observedTexonsFeatureValues, featureMean, featureValueStdVarince**2)) - np.log(10)  for featureMean in featureDiscreteMean]
+    texonsFeatureValueLikelihoodLogOnDiffFeatureMean = [sum(stats.norm.logpdf(observedTexonsFeatureValues, featureMean, featureValueStdVarince)) - np.log(10)  for featureMean in featureDiscreteMean]
     texonsFeatureValueLikelihoodLog = max(texonsFeatureValueLikelihoodLogOnDiffFeatureMean)
     return texonsFeatureValueLikelihoodLog, featureDiscreteMean[texonsFeatureValueLikelihoodLogOnDiffFeatureMean.index(texonsFeatureValueLikelihoodLog)]
 
@@ -82,24 +95,24 @@ class VisualizePossiblePartition():
 def main():
     imageNum = 5 
 
-    treeNum = 100
+    treeNum = 1000
     gamma = 1
-    maxDepth = 3 
+    maxDepth = 4
     alphaDirichlet = 3.5    
 
-    imageWidth = 320
-    imageHeight = 320
-    gridLengthX = 40 
-    gridLengthY = 40
-    gridForPartitionRate = 1
+    imageWidth = 960
+    imageHeight = 960
+    gridLengthX = 60 
+    gridLengthY = 60
+    gridForPartitionRate = 4
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
      
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 4
+    featureProportionScale = 0.5
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
     featureMeanIntevel = 0.1 * featureProportionScale
-    featureStdVarince = 0.05 * featureProportionScale
+    featureStdVarince = 0.1 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
