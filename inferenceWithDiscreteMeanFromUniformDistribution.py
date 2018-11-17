@@ -54,7 +54,7 @@ def calTexonsLikelihoodLog(row, texonsObserved, pandasOnlySupportArgNumBiggerTwo
     texonsInPartition = texonsObserved[(texonsObserved['centerX'] > xMin) & (texonsObserved['centerX'] < xMax) & (texonsObserved['centerY'] > yMin) & (texonsObserved['centerY'] < yMax)]
     featureValueStdVarince = row['featureStdVarince'][0]
     observedTexonsFeatureValues = texonsInPartition[feature].values
-    texonsFeatureValueLikelihoodLogOnDiffFeatureMean = [sum(stats.norm.logpdf(observedTexonsFeatureValues, featureMean, featureValueStdVarince**2)) - np.log(10)  for featureMean in featureDiscreteMean]
+    texonsFeatureValueLikelihoodLogOnDiffFeatureMean = [sum(stats.norm.logpdf(observedTexonsFeatureValues, featureMean, featureValueStdVarince)) - np.log(10)  for featureMean in featureDiscreteMean]
     texonsFeatureValueLikelihoodLog = max(texonsFeatureValueLikelihoodLogOnDiffFeatureMean)
     return texonsFeatureValueLikelihoodLog, featureDiscreteMean[texonsFeatureValueLikelihoodLogOnDiffFeatureMean.index(texonsFeatureValueLikelihoodLog)]
 
@@ -82,24 +82,24 @@ class VisualizePossiblePartition():
 def main():
     imageNum = 5 
 
-    treeNum = 100
+    treeNum = 1000
     gamma = 1
-    maxDepth = 3 
+    maxDepth = 4 
     alphaDirichlet = 3.5    
 
-    imageWidth = 320
-    imageHeight = 320
-    gridLengthX = 40 
-    gridLengthY = 40
-    gridForPartitionRate = 1
+    imageWidth = 960
+    imageHeight = 960
+    gridLengthX = 60 
+    gridLengthY = 60
+    gridForPartitionRate = 4
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
      
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 4
+    featureProportionScale = 0.5
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
     featureMeanIntevel = 0.1 * featureProportionScale
-    featureStdVarince = 0.05 * featureProportionScale
+    featureStdVarince = 0.1 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
@@ -111,7 +111,7 @@ def main():
     partitionHypothesesSpaceGivenTreeHypothesesSpace = list(it.chain(*[generateDiffPartitiedTrees(treeHypothesis)[0] for treeHypothesis in treeHypothesesSpace]))
     partitionsPriorLog = [partitionHypothesis.node[0]['treePriorLog'] + partitionHypothesis.node[0]['partitionPriorLog'] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
     
-    for imageIndex in range(imageNum):
+    for imageIndex in range(3, imageNum):
         texonsObserved = pd.read_csv('~/segmentation-expt4/generate/demoUnscaled' + str(imageIndex) + '.csv')
         
         print(datetime.datetime.now())
@@ -123,7 +123,7 @@ def main():
 
         indexDecending = np.argsort(partitionsNormalizedPosterior)
         visualizePossiblePartition = VisualizePossiblePartition(imageWidth, imageHeight, imageIndex)                
-        for pRankIndex in range(-3, 0):
+        for pRankIndex in range(-150, 0):
             
             partition = partitionHypothesesSpaceGivenTreeHypothesesSpace[indexDecending[pRankIndex]]
             partitionPosterior = partitionsNormalizedPosterior[indexDecending[pRankIndex]]

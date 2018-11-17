@@ -37,10 +37,11 @@ def makeLeafNodeParametersDataFrameWithPartitionAndFeatureMean(tree):
     return leafPartitionParameterDf
 
 class SampleTexonsLocationsAndFeatures():
-    def __init__(self, gridLengthX, gridLengthY, featureStdVarinces):
+    def __init__(self, gridLengthX, gridLengthY, featureStdVarinces, featureProportionScale):
         self.gridLengthX = gridLengthX
         self.gridLengthY = gridLengthY
         self.featureStdVarinces = featureStdVarinces
+        self.featureProportionScale = featureProportionScale
 
     def __call__(self, partitionX, partitionY, partitionFeatureMeans):
         partitionXMin, partitionXMax = partitionX    
@@ -53,8 +54,9 @@ class SampleTexonsLocationsAndFeatures():
         locationNoises = np.random.multivariate_normal([0, 0], [[self.gridLengthX/3, 0], [0, self.gridLengthY/3]], gridNumPartition)
         locationCenters = np.array(list(it.product(locationXCenters, locationYCenters)))
         texonsLocation = locationCenters + locationNoises
-        texonsFeaturesValue = np.array([sampleTexonsFeatureValue(partitionFeatureMeans[featureName], self.featureStdVarinces[featureName] ** 2, gridNumPartition) for featureName in partitionFeatureMeans.index]).T
-        
+        texonsFeaturesValue = np.array([sampleTexonsFeatureValue(partitionFeatureMeans[featureName], self.featureStdVarinces[featureName], gridNumPartition) for featureName in partitionFeatureMeans.index]).T
+        while (np.any(texonsFeaturesValue <= 0) or np.any(texonsFeaturesValue >= self.featureProportionScale)): 
+            texonsFeaturesValue = np.array([sampleTexonsFeatureValue(partitionFeatureMeans[featureName], self.featureStdVarinces[featureName], gridNumPartition) for featureName in partitionFeatureMeans.index]).T
         texonsFeatureParameter = pd.DataFrame(texonsFeaturesValue, columns = partitionFeatureMeans.index)
         texonsLocationParameter = pd.DataFrame(texonsLocation, columns = ['x', 'y'])
         texonsCenterLocParameter = pd.DataFrame(locationCenters, columns = ['centerX', 'centerY'])
@@ -125,23 +127,24 @@ class VisualizeTexonsAndPartitionTruth():
 def main():
     imageNum = 5
 
-    treeNum = 100
+    treeNum = 1000
     gamma = 1
-    maxDepth = 3 
+    maxDepth = 4 
     alphaDirichlet = 3.5    
 
-    imageWidth = 320
-    imageHeight = 320
-    gridLengthX = 40 
-    gridLengthY = 40
-    partitionInterval = {'x': gridLengthX, 'y': gridLengthY}
+    imageWidth = 960
+    imageHeight = 960
+    gridLengthX = 60 
+    gridLengthY = 60
+    gridForPartitionRate = 4
+    partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
     
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 4
+    featureProportionScale = 0.5
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
     featureMeanIntevel = 0.1 * featureProportionScale
-    featureStdVarince = 0.05 * featureProportionScale
+    featureStdVarince = 0.1 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
     
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
@@ -167,7 +170,7 @@ def main():
         sampledFeatureMeansInPartitions = sampleNodesFeatureMeans(sampledPartition)
         leafPartitionParameterDf = makeLeafNodeParametersDataFrameWithPartitionAndFeatureMean(sampledFeatureMeansInPartitions)
 
-        sampleTexonsGivenPartitionsAndFeatureMeans = SampleTexonsLocationsAndFeatures(gridLengthX, gridLengthY, featuresStdVarince)
+        sampleTexonsGivenPartitionsAndFeatureMeans = SampleTexonsLocationsAndFeatures(gridLengthX, gridLengthY, featuresStdVarince, featureProportionScale)
         partitionXTotal, partitionYTotal, partitionFeatureMeansTotal = leafPartitionParameterDf['x'], leafPartitionParameterDf['y'], leafPartitionParameterDf.drop(['x','y'],axis = 1)
         texonsParameterTotal = pd.concat([sampleTexonsGivenPartitionsAndFeatureMeans(partitionXTotal.iloc[partitionIndex], partitionYTotal.iloc[partitionIndex], partitionFeatureMeansTotal.iloc[partitionIndex]) for partitionIndex in range(len(leafPartitionParameterDf))], ignore_index = True)
 
