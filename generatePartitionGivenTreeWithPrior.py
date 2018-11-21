@@ -14,7 +14,7 @@ class GenerateDiffPartitiedTrees():
         self.imageHeight = imageHeight
 
     def __call__(self, tree):
-        tree.node[0]['partitionPriorLog'] = 0
+        tree.node[0]['partitionUnnormalizedPriorLog'] = 0
         tree.node[0]['partition'] = {'x': [0, self.imageWidth], 'y': [0, self.imageHeight]}
         directionNames = list(self.partitionInterval)
         nonleafNodes = [n for n,d in dict(tree.out_degree()).items() if d!=0]
@@ -25,7 +25,11 @@ class GenerateDiffPartitiedTrees():
 
             untilCurrNonleafNodePartitiedTrees = list(it.chain(*newestPartitiedTrees))
         allDirectionOrderPartitiedTrees = untilCurrNonleafNodePartitiedTrees
-        allDirectionOrderPartitiedTreesPriors = [np.exp(tree.node[0]['partitionPriorLog']) for tree in allDirectionOrderPartitiedTrees]
+        allDirectionOrderPartitiedTreesPriors = [np.exp(tree.node[0]['partitionUnnormalizedPriorLog']) for tree in allDirectionOrderPartitiedTrees]
+        allDirectionOrderPartitiedTreesNormalizedPriors = allDirectionOrderPartitiedTreesPriors/np.sum(allDirectionOrderPartitiedTreesPriors)
+        for partitiedTreeIndex in range(len(allDirectionOrderPartitiedTrees)):
+            allDirectionOrderPartitiedTrees[partitiedTreeIndex].node[0]['partitionPriorLog'] = np.log(allDirectionOrderPartitiedTreesNormalizedPriors[partitiedTreeIndex])
+        #if tree.node[list(tree.nodes)[-1]]['depth'] == 2:
         return allDirectionOrderPartitiedTrees, allDirectionOrderPartitiedTreesPriors
 
 class GeneratePossiblePartitiedTreesCurrNonleafNodeAndCalPartitonLogPrior():
@@ -61,6 +65,6 @@ def mergeNewParameterIntoTrees(tree, children, childrenParameter, parameterName,
     treeCopy = tree.copy()
     for childIndex in range(len(children)):
         treeCopy.node[children[childIndex]][parameterName] = childrenParameter[childIndex]
-    treeCopy.node[0]['partitionPriorLog'] = treeCopy.node[0]['partitionPriorLog'] + parameterPrior
+    treeCopy.node[0]['partitionUnnormalizedPriorLog'] = treeCopy.node[0]['partitionUnnormalizedPriorLog'] + parameterPrior
     return treeCopy
 

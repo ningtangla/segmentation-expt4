@@ -118,7 +118,7 @@ def removeRepeatChildNodeAndMapPriorsToNewTrees(uniqueRepeatChildTrees, uniqueRe
             noRepeatChildTrees.extend([noRepeatChildTree])
             noRepeatChildTreesNodesSituations.extend([noRepeatChildTreeGuestsAssignment])
             noRepeatChildTreesPriors.extend([uniqueRepeatChildTreesPriors[repeatChildTreeIndex]])
-        #print(uniqueRepeatChildTree, noRepeatChildTreesPriors, noRepeatChildTreesNodesSituations)
+    print(uniqueRepeatChildTree, noRepeatChildTreesPriors, noRepeatChildTreesNodesSituations)
     return noRepeatChildTrees, noRepeatChildTreesPriors 
 
 def calChildrenNumOfNodes(tree):
@@ -139,12 +139,19 @@ def removeRepeatChildNode(tree):
                 currNode = currNode + 1
         else:
             currNode = currNode + 1
+    
+    nonRootNodes = [n for n,d in dict(tree.in_degree()).items() if d!=0]
+    parentNodesOfNonRootNodes = list(it.chain(*[list(tree.predecessors(node)) for node in nonRootNodes]))
+    for nodeIndex in range(len(nonRootNodes)):
+        parentNodeDepth = tree.node[parentNodesOfNonRootNodes[nodeIndex]]['depth']
+        tree.node[nonRootNodes[nodeIndex]]['depth'] = parentNodeDepth + 1
+
     return tree
 
 def main():
-    treeNum = 100
-    gamma = 0.9
-    maxDepth = 3
+    treeNum = 1000
+    gamma = 1
+    maxDepth = 4
     trees = generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum)
 #        nx.draw(tree)
 #        nx.draw_networkx_labels(tree, pos=nx.spring_layout(tree))
