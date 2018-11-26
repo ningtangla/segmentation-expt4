@@ -126,7 +126,7 @@ class VisualizeTexonsAndPartitionTruth():
         pygame.image.save(self.screen, 'generate/DemoTruthPartition' + str(imageIndex) + '.png')
 
 def main():
-    imageNum = 50
+    imageNum = 5 
 
     treeNum = 1000
     gamma = 0.9
@@ -141,12 +141,12 @@ def main():
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
     
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 0.5
+    featureProportionScale = 1
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-    featureMeanIntevel = 0.15 * featureProportionScale
-    featureStdVarince = 0.09 * featureProportionScale
+    featureMeanIntevel = 0.12 * featureProportionScale
+    featureStdVarince = 0.07 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
     
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
@@ -178,8 +178,8 @@ def main():
 
         texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal, featureMappingScaleFromPropotionToValue)
         visualizeTexons = VisualizeTexonsAndPartitionTruth(imageWidth, imageHeight)
-        texonsParameterTotal.to_csv('~/segmentation-expt4/generate/demoUnscaled' + str(imageIndex) + '.csv')
-        texonsParameterDrawing.to_csv('~/segmentation-expt4/generate/demo' + str(imageIndex) + '.csv')
+        texonsParameterTotal.to_csv('generate/demoUnscaled' + str(imageIndex) + '.csv')
+        texonsParameterDrawing.to_csv('generate/demo' + str(imageIndex) + '.csv')
         visualizeTexons(texonsParameterDrawing, sampledPartition, imageIndex) 
 
 if __name__=="__main__":

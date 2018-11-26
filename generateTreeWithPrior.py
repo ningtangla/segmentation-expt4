@@ -118,7 +118,7 @@ def removeRepeatChildNodeAndMapPriorsToNewTrees(uniqueRepeatChildTrees, uniqueRe
             noRepeatChildTrees.extend([noRepeatChildTree])
             noRepeatChildTreesNodesSituations.extend([noRepeatChildTreeGuestsAssignment])
             noRepeatChildTreesPriors.extend([uniqueRepeatChildTreesPriors[repeatChildTreeIndex]])
-    print(uniqueRepeatChildTree, noRepeatChildTreesPriors, noRepeatChildTreesNodesSituations)
+    #print(uniqueRepeatChildTree, noRepeatChildTreesPriors, noRepeatChildTreesNodesSituations)
     return noRepeatChildTrees, noRepeatChildTreesPriors 
 
 def calChildrenNumOfNodes(tree):
