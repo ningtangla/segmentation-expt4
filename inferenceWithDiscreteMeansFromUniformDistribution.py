@@ -18,9 +18,10 @@ class CalOnePartitionLikelihoodLog():
 
     def __call__(self, partition):
         partitionLikelihoodLogUnderDiffChangeFeatureOrder, t = zip(*[calOnePartitionUnderOneChangeFeatureOrderLikelihoodLog(partition, self.texonsObserved, changeFeatureDiscreteMeansOnDepthes, changeFeatureStdVarincesOnDepthes, changeFeaturesOnDepthes) for changeFeatureDiscreteMeansOnDepthes, changeFeatureStdVarincesOnDepthes, changeFeaturesOnDepthes in zip(self.possibleChangeFeatureDiscreteMeansOnDepthes, self.possibleChangeFeatureStdVarincesOnDepthes, self.possibleChangeFeaturesOnDepthes)])
-        partitionLikelihoodLog = max(partitionLikelihoodLogUnderDiffChangeFeatureOrder) - np.log(len(self.possibleChangeFeaturesOnDepthes))
-        #z = [tt[['bestFeatureMean', 'texonsFeatureValueLikelihoodLog', 'feature']] for tt in t]
-        return partitionLikelihoodLog
+        partitionLikelihoodLogUnderBestFeatureChangeOrder = max(partitionLikelihoodLogUnderDiffChangeFeatureOrder)
+        partitionLikelihoodLog = partitionLikelihoodLogUnderBestFeatureChangeOrder - np.log(len(self.possibleChangeFeaturesOnDepthes))
+        z = t[partitionLikelihoodLogUnderDiffChangeFeatureOrder.index(partitionLikelihoodLogUnderBestFeatureChangeOrder)][['x', 'y', 'bestFeatureMean', 'texonsFeatureValueLikelihoodLog', 'feature']]
+        return partitionLikelihoodLog, z
 
 def calOnePartitionUnderOneChangeFeatureOrderLikelihoodLog(partition, texonsObserved, changeFeatureDiscreteMeansOnDepthes, changeFeatureStdVarincesOnDepthes, changeFeaturesOnDepthes):
     partitionNonRootNodes = [n for n,d in dict(partition.in_degree()).items() if d!=0]
@@ -96,7 +97,7 @@ class VisualizePossiblePartition():
 
     
 def main():
-    imageNum = 32 
+    imageNum = 5 
 
     treeNum = 1000
     gamma = 0.9
@@ -111,11 +112,11 @@ def main():
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
      
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 0.5
+    featureProportionScale = 1
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-    featureMeanIntevel = 0.15 * featureProportionScale
-    featureStdVarince = 0.09 * featureProportionScale
+    featureMeanIntevel = 0.12 * featureProportionScale
+    featureStdVarince = 0.07 * featureProportionScale
     featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
@@ -126,14 +127,17 @@ def main():
     partitionsPriorLog = [partitionHypothesis.node[0]['treePriorLog'] + partitionHypothesis.node[0]['partitionPriorLog'] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
     
     for imageIndex in range(imageNum):
-        texonsObserved = pd.read_csv('~/segmentation-expt4/generate/demoUnscaled' + str(imageIndex) + '.csv')
+        texonsObserved = pd.read_csv('generate/demoUnscaled' + str(imageIndex) + '.csv')
         
         print(datetime.datetime.now())
         calOnePartitionLikelihoodLog = CalOnePartitionLikelihoodLog(allDiscreteUniformFeaturesMeans, featuresStdVarince, texonsObserved)
-        partitionsLikelihoodLogConditionOnObservedData = [calOnePartitionLikelihoodLog(partitionHypothesis) for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
+        partitionsLikelihoodLogConditionOnObservedData = [calOnePartitionLikelihoodLog(partitionHypothesis)[0] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
+        partitionsLikelihoodLogBestChangeFeatureOrderDf = [calOnePartitionLikelihoodLog(partitionHypothesis)[1] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
         
         partitionsPosteriorLog = np.array(partitionsPriorLog) + np.array(partitionsLikelihoodLogConditionOnObservedData)
-        partitionsNormalizedPosterior = np.exp(partitionsPosteriorLog - max(partitionsPosteriorLog))
+        partitionsPreNormalizedPosterior = np.exp(partitionsPosteriorLog - max(partitionsPosteriorLog))
+        partitionsPreNormalizedPosteriorSum = sum(partitionsPreNormalizedPosterior)
+        partitionsNormalizedPosterior = partitionsPreNormalizedPosterior/partitionsPreNormalizedPosteriorSum
 
         indexDecending = np.argsort(partitionsNormalizedPosterior)
         visualizePossiblePartition = VisualizePossiblePartition(imageWidth, imageHeight, imageIndex)                
@@ -141,6 +145,7 @@ def main():
             
             partition = partitionHypothesesSpaceGivenTreeHypothesesSpace[indexDecending[pRankIndex]]
             partitionPosterior = partitionsNormalizedPosterior[indexDecending[pRankIndex]]
+            partitionBestChangeFeatureOrderDf = partitionsLikelihoodLogBestChangeFeatureOrderDf[indexDecending[pRankIndex]]
             visualizePossiblePartition(partition, partitionPosterior, pRankIndex)
                         
         print(datetime.datetime.now())
