@@ -177,8 +177,8 @@ def main():
 
         texonsParameterDrawing = transTexonParameterToPolygenDrawArguemnt(texonsParameterTotal, featureMappingScaleFromPropotionToValue)
         visualizeTexons = VisualizeTexonsAndPartitionTruth(imageWidth, imageHeight)
-        texonsParameterTotal.to_csv('~/segmentation-expt4/generate/demoUnscaled' + str(imageIndex) + '.csv')
-        texonsParameterDrawing.to_csv('~/segmentation-expt4/generate/demo' + str(imageIndex) + '.csv')
+        texonsParameterTotal.to_csv('generate/demoUnscaled' + str(imageIndex) + '.csv')
+        texonsParameterDrawing.to_csv('generate/demo' + str(imageIndex) + '.csv')
         visualizeTexons(texonsParameterDrawing, sampledPartition, imageIndex) 
 
 if __name__=="__main__":

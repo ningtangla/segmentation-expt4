@@ -30,7 +30,7 @@ class GenerateDiffPartitiedTrees():
         for partitiedTreeIndex in range(len(allDirectionOrderPartitiedTrees)):
             allDirectionOrderPartitiedTrees[partitiedTreeIndex].node[0]['partitionPriorLog'] = np.log(allDirectionOrderPartitiedTreesNormalizedPriors[partitiedTreeIndex])
         #if tree.node[list(tree.nodes)[-1]]['depth'] == 2:
-        return allDirectionOrderPartitiedTrees, allDirectionOrderPartitiedTreesPriors
+        return allDirectionOrderPartitiedTrees, allDirectionOrderPartitiedTreesNormalizedPriors
 
 class GeneratePossiblePartitiedTreesCurrNonleafNodeAndCalPartitonLogPrior():
     def __init__(self, alphaDirichlet):
