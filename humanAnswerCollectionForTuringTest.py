@@ -4,7 +4,7 @@ import os
 import cv2
 import itertools as it
 
-project_path = "E:/redraw/"
+project_path = "redraw/"
 data_path = os.path.join(project_path, "data/")
 image_path = os.path.join(project_path, "images/")
 colordata_path = os.path.join(project_path, "colordata/")
@@ -147,25 +147,28 @@ def mouse_select(event, x, y, flag, param):
                 cv2.line(param[0], (int(CLICK_POINTS[0][0]), int(CLICK_POINTS[0][1])), (int(CLICK_POINTS[1][0]), int(CLICK_POINTS[1][1])), (0, 255, 0), 3)
             cv2.imshow('image', param[0])
                               
-def parse(vertexes, image):
+def parse(vertexes, image, cut_order):
     global CLICK_NUMBER, CLICK_POINTS, CONFIRM_POINTS
     possible_points = possible_cutpos(vertexes)
     for j in range(len(possible_points)):
         for k in range(len(possible_points[j])):
             cv2.circle(image, (int(possible_points[j][k][0]), int(possible_points[j][k][1])), CIRCLE_SIZE, CIRCLE_COLOR, -1)  
-    cv2.imshow('image', image)    
-    cv2.setMouseCallback('image', mouse_select, [image, possible_points])
-    cv2.waitKey()
-#    cut_points = CLICK_POINTS[:]
-#    print(cut_points) 
+    cv2.imshow('image', image)
+    parsekey = 100000
+    while len(CLICK_POINTS) != 2 and parsekey != 13:
+        cv2.setMouseCallback('image', mouse_select, [image, possible_points])
+        parsekey = cv2.waitKey()
+    
+    if parsekey == 13:
+        cut_order = 1
+    else:
+        selected_shape = select_cutshape(vertexes, CLICK_POINTS)
+        points_reallocation(cut_points = CLICK_POINTS, vertexes = vertexes, selected_shape = selected_shape)   
 
-
-    selected_shape = select_cutshape(vertexes, CLICK_POINTS)
-    points_reallocation(cut_points = CLICK_POINTS, vertexes = vertexes, selected_shape = selected_shape)   
     CLICK_NUMBER = 0
     CLICK_POINTS = []
     CONFIRM_POINTS = []
-    return vertexes, image
+    return vertexes, image, cut_order
     
 def cut(vertexes, cut_order, image, image_number):
     for i in range(CUT_NUMBER + 1 - cut_order):
@@ -173,11 +176,10 @@ def cut(vertexes, cut_order, image, image_number):
         cv2.polylines(image, [points], True, (55,255,155), 3)
         cv2.imshow('image', image)
         
-    image = parse(vertexes = vertexes, image = image)[1]
+    image, cut_order = parse(vertexes = vertexes, image = image, cut_order = cut_order)[1:3]
     cv2.imwrite(data_path+str(IMAGE_ORDER[image_number - 1])+'/'+str(CUT_NUMBER - cut_order + 1)+'.png', image)
-    
     if cut_order == 1:
-        for k in range(CUT_NUMBER+1):
+        for k in range(len(vertexes)):
             cv2.rectangle(image, (int(vertexes[k][0][0]), int(vertexes[k][0][1])), (int(vertexes[k][2][0]), int(vertexes[k][2][1])), (55,255,155), 3)            
         cv2.imshow('image', image)
         cv2.imwrite(data_path+str(IMAGE_ORDER[image_number - 1])+'/humanAnswer.png', image)
@@ -186,11 +188,7 @@ def cut(vertexes, cut_order, image, image_number):
         
 def iamge_generate(image_number):
     image = np.zeros([image_height, image_width, 3], 'uint8') 
-    image[...] = 40
     blank_proportion = 0.1
-    cv2.namedWindow('image')
-    cv2.imshow('image', image)
-    cv2.waitKey()
     memory_image = cv2.imread(image_path+str(IMAGE_ORDER[image_number - 1])+'.png')
     resize_image = cv2.resize(memory_image,(int((1-blank_proportion)*image_width), int((1-blank_proportion)*image_height)),interpolation=cv2.INTER_CUBIC)
     image[int((blank_proportion/2)*image_height) : int((1-blank_proportion/2)*image_height), int((blank_proportion/2)*image_width) : int((1-blank_proportion/2)*image_width)] = resize_image
@@ -201,7 +199,10 @@ def iamge_generate(image_number):
     VERTEXES.append(vertexes_nocut)
     image = cut(vertexes = VERTEXES, cut_order = CUT_NUMBER, image = image, image_number = image_number)   
     cv2.imshow('image', image)
-    
+    print(image_number)
+    key = cv2.waitKey()
+    if key == 27:
+        image_number = 1
     if image_number == 1:
         print('done')
         return    
