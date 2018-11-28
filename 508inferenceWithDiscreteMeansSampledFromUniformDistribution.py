@@ -4,6 +4,7 @@ import numpy as np
 import itertools as it
 import networkx as nx
 import math
+import cv2
 import pygame
 import datetime 
 import generateTreeWithPrior as generateTree
@@ -75,14 +76,14 @@ def calTexonsLikelihoodLog(row, texonsObserved, pandasOnlySupportArgNumBiggerTwo
     return texonsFeatureValueLikelihoodLog
 
 class VisualizePossiblePartition():
-    def __init__(self, widthImage, heightImage, imageIndex):
-        self.imageIndex = imageIndex
-        self.screen = pygame.display.set_mode([widthImage, heightImage])
+    def __init__(self, imageWidth, imageHeight, imageWidthAllignedWithHumanAnswer, imageHeightAllignedWithHumanAnswer, blankProportion, lineWidth):
+        self.imageWidth, self.imageHeight = imageWidth, imageHeight
+        self.imageWidthAllignedWithHumanAnswer, self.imageHeightAllignedWithHumanAnswer = imageWidthAllignedWithHumanAnswer, imageHeightAllignedWithHumanAnswer
+        self.blankProportion = blankProportion
+        self.lineWidth = lineWidth
 
-    def __call__(self, partition, partitionP, partitionPRank):
-        observedImage = pygame.image.load('generate/demo' + str(self.imageIndex) + '.png').convert()
-        self.screen.blit(observedImage, (0, 0))
-        pygame.display.flip()
+    def __call__(self, imageIndex, partition, sampleIndex):
+        image = cv2.imread('generate/demo' + str(imageIndex)+'.png')
         partitionNodes = list(partition.nodes())
         partitionNodes.reverse()
         for node in partitionNodes:
@@ -90,34 +91,43 @@ class VisualizePossiblePartition():
             yMin, yMax = partition.node[node]['partition']['y']
             width = xMax - xMin
             height = yMax - yMin
-            pygame.draw.rect(self.screen, np.array([255, 0, 0]) / (partition.node[node]['depth'] + 1), np.array([xMin, yMin, width, height]), 3)
-        pygame.display.flip()
-        pygame.image.save(self.screen, 'inference/possiblePartition_' + str(self.imageIndex) + '_' + str(-1 * partitionPRank) + '_' + str(partitionP) + '.png')
-
+            cv2.rectangle(image, (xMin, yMin), (xMax, yMax), (255, 255, 255), 1 + round(self.lineWidth * self.imageWidth / (self.imageWidthAllignedWithHumanAnswer * (1 - self.blankProportion))))
+        
+        resizeImage = cv2.resize(image,(int((1-self.blankProportion) * self.imageHeightAllignedWithHumanAnswer), int((1-self.blankProportion) * self.imageWidthAllignedWithHumanAnswer)), interpolation=cv2.INTER_CUBIC)
+        inferenceImage = np.zeros([self.imageHeightAllignedWithHumanAnswer, self.imageWidthAllignedWithHumanAnswer, 3], 'uint8')
+        inferenceImage[int((self.blankProportion/2) * self.imageHeightAllignedWithHumanAnswer) : int((1-self.blankProportion/2) * self.imageHeightAllignedWithHumanAnswer), int((self.blankProportion/2) * self.imageWidthAllignedWithHumanAnswer) : int((1-self.blankProportion/2) * self.imageWidthAllignedWithHumanAnswer)] = resizeImage
+        cv2.rectangle(inferenceImage, (int(self.blankProportion/2 * self.imageHeightAllignedWithHumanAnswer), int(self.blankProportion/2 * self.imageWidthAllignedWithHumanAnswer)), (int((1 - self.blankProportion/2) * self.imageHeightAllignedWithHumanAnswer), int((1-self.blankProportion/2) * self.imageWidthAllignedWithHumanAnswer)), (255, 255, 255), self.lineWidth)
+        cv2.imshow('image', image)
+        cv2.imwrite('inference/demo' + str(imageIndex) + '_' + str(sampleIndex) + '.png', inferenceImage)
     
 def main():
-    parameterToKeepImageLikelihoodGivenPartitionComputable = 1300
-    imageNum = 2
+    parameterToKeepImageLikelihoodGivenPartitionComputable = 0
+    imageList = range(100, 140)
     
     treeNum = 1000
     gamma = 0.9
     maxDepth = 4
     alphaDirichlet = 3.4   
 
+    imageWidthAllignedWithHumanAnswer = 720
+    imageHeightAllignedWithHumanAnswer = 720
     imageWidth = 960
     imageHeight = 960
+    blankProportion = 0.1
+    lineWidth = 7
+
     gridLengthX = 60 
     gridLengthY = 60
     gridForPartitionRate = 4
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
      
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 1
+    featureProportionScale = 2
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-    featureMeanIntevel = 0.12 * featureProportionScale
-    featureStdVarince = 0.07 * featureProportionScale
-    featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
+    featureMeanIntevel = 0.10 * featureProportionScale
+    featureStdVarince = 0.06 * featureProportionScale
+    featurePossibleMeans = np.arange(3.3 * featureStdVarince, featureProportionScale - 3.3 * featureStdVarince + 0.001, featureMeanIntevel) 
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
 
@@ -126,8 +136,9 @@ def main():
     partitionHypothesesSpaceGivenTreeHypothesesSpace = list(it.chain(*[generateDiffPartitiedTrees(treeHypothesis)[0] for treeHypothesis in treeHypothesesSpace]))
     partitionsPriorLog = [partitionHypothesis.node[0]['treePriorLog'] + partitionHypothesis.node[0]['partitionPriorLog'] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
     
+    visualizePossiblePartition = VisualizePossiblePartition(imageWidth, imageHeight, imageWidthAllignedWithHumanAnswer, imageHeightAllignedWithHumanAnswer, blankProportion, lineWidth)                
     imagesInformationValues = []
-    for imageIndex in range(imageNum):
+    for imageIndex in imageList:
         texonsObserved = pd.read_csv('generate/demoUnscaled' + str(imageIndex) + '.csv')
 
         print(datetime.datetime.now())
@@ -136,24 +147,20 @@ def main():
         
         partitionsPosteriorLog = np.array(partitionsPriorLog) + np.array(partitionsLikelihoodLogConditionOnObservedData)
         partitionsPreNormalizedPosterior = np.exp(partitionsPosteriorLog - parameterToKeepImageLikelihoodGivenPartitionComputable) 
-        partitionsPreNormalizedPosteriorSum = sum(partitionsPreNormalizedPosterior)
+        partitionsPreNormalizedPosteriorSum = np.sum(partitionsPreNormalizedPosterior)
         partitionsNormalizedPosterior = partitionsPreNormalizedPosterior/partitionsPreNormalizedPosteriorSum
         
         imageInformation = - np.log2(partitionsPreNormalizedPosteriorSum)
         imagesInformationValues.append(imageInformation)
-
         indexDecending = np.argsort(partitionsNormalizedPosterior)
-        visualizePossiblePartition = VisualizePossiblePartition(imageWidth, imageHeight, imageIndex)                
-        for pRankIndex in range(-3, 0):
-            
-            partition = partitionHypothesesSpaceGivenTreeHypothesesSpace[indexDecending[pRankIndex]]
-            partitionPosterior = partitionsNormalizedPosterior[indexDecending[pRankIndex]]
-            visualizePossiblePartition(partition, partitionPosterior, pRankIndex)
-                        
+        
+        for sampleIndex in range(16):    
+            partition = partitionHypothesesSpaceGivenTreeHypothesesSpace[list(np.random.multinomial(1, partitionsNormalizedPosterior)).index(1)]
+            visualizePossiblePartition(imageIndex, partition, sampleIndex)
         print(datetime.datetime.now())
         mostLikeliPartitiedTree = partitionHypothesesSpaceGivenTreeHypothesesSpace[np.argmax(partitionsNormalizedPosterior)]
         nx.write_gpickle(mostLikeliPartitiedTree, 'inference/mostLikeliPartitiedTree_' + str(imageIndex) + '.gpickle')
-    
+        
     imagesInformationDf = pd.DataFrame(imagesInformationValues, columns = ['informationContent'])
     imagesInformationDf.to_csv('inference/informationContent.csv')
 

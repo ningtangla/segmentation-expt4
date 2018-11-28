@@ -126,7 +126,7 @@ class VisualizeTexonsAndPartitionTruth():
         pygame.image.save(self.screen, 'generate/DemoTruthPartition' + str(imageIndex) + '.png')
 
 def main():
-    imageNum = 3 
+    imageNum = 300 
 
     treeNum = 1000
     gamma = 0.9
@@ -141,13 +141,13 @@ def main():
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
     
     featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
-    featureProportionScale = 1
+    featureProportionScale = 2 
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-    featureMeanIntevel = 0.12 * featureProportionScale
-    featureStdVarince = 0.07 * featureProportionScale
-    featurePossibleMeans = np.arange(2 * featureStdVarince, featureProportionScale - 2 * featureStdVarince + 0.001, featureMeanIntevel) 
+    featureMeanIntevel = 0.10 * featureProportionScale
+    featureStdVarince = 0.06 * featureProportionScale
+    featurePossibleMeans = np.arange(3.3 * featureStdVarince, featureProportionScale - 3.3 * featureStdVarince + 0.001, featureMeanIntevel) 
     
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
