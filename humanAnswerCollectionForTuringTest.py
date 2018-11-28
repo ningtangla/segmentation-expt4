@@ -7,7 +7,6 @@ import itertools as it
 project_path = "redraw/"
 data_path = os.path.join(project_path, "data/")
 image_path = os.path.join(project_path, "images/")
-colordata_path = os.path.join(project_path, "colordata/")
 
 
 image_width = 720
@@ -30,6 +29,7 @@ CLICK_NUMBER = 0
 CLICK_POINTS = []
 CONFIRM_POINTS = []
 CLICK_COLOR = []
+SUB_NUM = raw_input('subject_num:')
 
 def draw_polygen(vertexes, img, color):
 
@@ -175,25 +175,26 @@ def parse(vertexes, image, cut_order):
     return vertexes, image, cut_order
     
 def cut(vertexes, cut_order, image, image_number):
+    global SUB_NUM
     for i in range(CUT_NUMBER + 1 - cut_order):
         points = np.array(vertexes[i], np.int32)
         cv2.polylines(image, [points], True, (255, 255, 255), LINE_SIZE)
         cv2.imshow('image', image)
         
     image, cut_order = parse(vertexes = vertexes, image = image, cut_order = cut_order)[1:3]
-    cv2.imwrite(data_path+str(IMAGE_ORDER[image_number - 1])+'/'+str(CUT_NUMBER - cut_order + 1)+'.png', image)
+    cv2.imwrite(data_path+'demo'+str(IMAGE_ORDER[image_number - 1])+'_'+SUB_NUM+'cut'+ str(CUT_NUMBER - cut_order + 1)+'.png', image)
     if cut_order == 1:
         for k in range(len(vertexes)):
             cv2.rectangle(image, (int(vertexes[k][0][0]), int(vertexes[k][0][1])), (int(vertexes[k][2][0]), int(vertexes[k][2][1])), (255, 255, 255), LINE_SIZE)            
         cv2.imshow('image', image)
-        cv2.imwrite(data_path+str(IMAGE_ORDER[image_number - 1])+'/humanAnswer.png', image)
+        cv2.imwrite(data_path+'demo'+str(IMAGE_ORDER[image_number - 1])+'_'+SUB_NUM+'humanAnswer.png', image)
         return image 
     return cut(vertexes, cut_order-1, image, image_number)
         
 def iamge_generate(image_number):
     image = np.zeros([image_height, image_width, 3], 'uint8') 
     blank_proportion = BLANK_PROPORTION
-    memory_image = cv2.imread(image_path+str(IMAGE_ORDER[image_number - 1])+'.png')
+    memory_image = cv2.imread(image_path+'demo'+str(IMAGE_ORDER[image_number - 1])+'.png')
     resize_image = cv2.resize(memory_image,(int((1-blank_proportion)*image_width), int((1-blank_proportion)*image_height)),interpolation=cv2.INTER_CUBIC)
     image[int((blank_proportion/2)*image_height) : int((1-blank_proportion/2)*image_height), int((blank_proportion/2)*image_width) : int((1-blank_proportion/2)*image_width)] = resize_image
     cv2.namedWindow('image')

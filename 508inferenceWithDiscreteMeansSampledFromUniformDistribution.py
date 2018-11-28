@@ -101,8 +101,8 @@ class VisualizePossiblePartition():
         cv2.imwrite('inference/demo' + str(imageIndex) + '_' + str(sampleIndex) + '.png', inferenceImage)
     
 def main():
-    parameterToKeepImageLikelihoodGivenPartitionComputable = 0
-    imageList = range(100, 140)
+    parameterToKeepImageLikelihoodGivenPartitionComputable = 1200
+    imageList = range(70)
     
     treeNum = 1000
     gamma = 0.9
@@ -153,7 +153,6 @@ def main():
         imageInformation = - np.log2(partitionsPreNormalizedPosteriorSum)
         imagesInformationValues.append(imageInformation)
         indexDecending = np.argsort(partitionsNormalizedPosterior)
-        
         for sampleIndex in range(16):    
             partition = partitionHypothesesSpaceGivenTreeHypothesesSpace[list(np.random.multinomial(1, partitionsNormalizedPosterior)).index(1)]
             visualizePossiblePartition(imageIndex, partition, sampleIndex)
