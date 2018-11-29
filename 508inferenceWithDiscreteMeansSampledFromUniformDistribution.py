@@ -102,7 +102,7 @@ class VisualizePossiblePartition():
     
 def main():
     parameterToKeepImageLikelihoodGivenPartitionComputable = 1200
-    imageList = range(70)
+    imageList = [4]
     
     treeNum = 1000
     gamma = 0.9

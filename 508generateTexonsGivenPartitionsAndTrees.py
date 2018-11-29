@@ -126,7 +126,7 @@ class VisualizeTexonsAndPartitionTruth():
         pygame.image.save(self.screen, 'generate/DemoTruthPartition' + str(imageIndex) + '.png')
 
 def main():
-    imageNum = 300 
+    imageNum = 30 
 
     treeNum = 1000
     gamma = 0.9
@@ -140,12 +140,12 @@ def main():
     gridForPartitionRate = 4
     partitionInterval = {'x': gridLengthX * gridForPartitionRate, 'y': gridLengthY * gridForPartitionRate}
     
-    featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-1.6]}) 
+    featuresValueMax = pd.DataFrame({'color': [1], 'length':[min(gridLengthX, gridLengthY)], 'angleRotated': [math.pi], 'logWidthLengthRatio': [-2]}) 
     featureProportionScale = 2 
     featureMappingScaleFromPropotionToValue = featuresValueMax / featureProportionScale
     
     "represent featureValue as proportion in range(0, ProportionScale), eg(1, 2, 3, ..10) to normalized the diff feature dimension range "
-    featureMeanIntevel = 0.10 * featureProportionScale
+    featureMeanIntevel = 0.12 * featureProportionScale
     featureStdVarince = 0.06 * featureProportionScale
     featurePossibleMeans = np.arange(3.3 * featureStdVarince, featureProportionScale - 3.3 * featureStdVarince + 0.001, featureMeanIntevel) 
     
