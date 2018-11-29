@@ -25,8 +25,9 @@ class GenerateDiffPartitiedTrees():
 
             untilCurrNonleafNodePartitiedTrees = list(it.chain(*newestPartitiedTrees))
         allDirectionOrderPartitiedTrees = untilCurrNonleafNodePartitiedTrees
-        allDirectionOrderPartitiedTreesPriors = [np.exp(tree.node[0]['partitionUnnormalizedPriorLog']) for tree in allDirectionOrderPartitiedTrees]
-        allDirectionOrderPartitiedTreesNormalizedPriors = allDirectionOrderPartitiedTreesPriors/np.sum(allDirectionOrderPartitiedTreesPriors)
+        allDirectionOrderPartitiedTreesPriorLogs = [tree.node[0]['partitionUnnormalizedPriorLog'] for tree in allDirectionOrderPartitiedTrees]
+        allDirectionOrderPartitiedTreesPreNormalizedPriors = np.exp(np.array(allDirectionOrderPartitiedTreesPriorLogs) - max(allDirectionOrderPartitiedTreesPriorLogs))
+        allDirectionOrderPartitiedTreesNormalizedPriors = allDirectionOrderPartitiedTreesPreNormalizedPriors/np.sum(allDirectionOrderPartitiedTreesPreNormalizedPriors)
         for partitiedTreeIndex in range(len(allDirectionOrderPartitiedTrees)):
             allDirectionOrderPartitiedTrees[partitiedTreeIndex].node[0]['partitionPriorLog'] = np.log(allDirectionOrderPartitiedTreesNormalizedPriors[partitiedTreeIndex])
         #if tree.node[list(tree.nodes)[-1]]['depth'] == 2:

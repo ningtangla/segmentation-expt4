@@ -90,7 +90,8 @@ def calGuestsNumInChildrenOfNonLeafNodes(tree):
 
 def calNonLeafNodePrior(guestsNumInChildrenOfNonLeafNode, gamma):
     guestsNumTotal = sum(guestsNumInChildrenOfNonLeafNode)
-    basicProbabiltyOfGuestsAssignmentIgnoreOrder = ft.reduce(op.mul, [gammaFunction(guestsNumOneTable + 1 - gamma) for guestsNumOneTable in guestsNumInChildrenOfNonLeafNode])/math.factorial(guestsNumTotal)
+    tablesNum = len(guestsNumInChildrenOfNonLeafNode)
+    basicProbabiltyOfGuestsAssignmentIgnoreOrder = ft.reduce(op.mul, [gammaFunction(guestsNumOneTable) for guestsNumOneTable in guestsNumInChildrenOfNonLeafNode]) * gammaFunction(gamma) * np.power(gamma, tablesNum) / gammaFunction(gamma + guestsNumTotal)
     possibleGuestsAssignments = list(set(it.permutations(guestsNumInChildrenOfNonLeafNode)))
     guestsPossibleCombinationsNumForAllEqualFormsAssignment = ft.reduce(op.add, [calGuestsPossibleCombinationsNumForGuestsAssignment(guestsAssignment) for guestsAssignment in possibleGuestsAssignments])
     totalProbalilityForOneAssignmentIgnorParticularGuests = basicProbabiltyOfGuestsAssignmentIgnoreOrder * guestsPossibleCombinationsNumForAllEqualFormsAssignment 
@@ -118,8 +119,11 @@ def removeRepeatChildNodeAndMapPriorsToNewTrees(uniqueRepeatChildTrees, uniqueRe
             noRepeatChildTrees.extend([noRepeatChildTree])
             noRepeatChildTreesNodesSituations.extend([noRepeatChildTreeGuestsAssignment])
             noRepeatChildTreesPriors.extend([uniqueRepeatChildTreesPriors[repeatChildTreeIndex]])
-    #print(uniqueRepeatChildTree, noRepeatChildTreesPriors, noRepeatChildTreesNodesSituations)
-    return noRepeatChildTrees, noRepeatChildTreesPriors 
+    noRepeatChildTreesNodesSituationsSorted = np.sort(noRepeatChildTreesNodesSituations)
+    noRepeatTreeSortedIndex = np.argsort(noRepeatChildTreesNodesSituations)
+    noRepeatChildTreesSorted = [noRepeatChildTrees[index] for index in noRepeatTreeSortedIndex]
+    noRepeatChildTreesPriorsSorted = [noRepeatChildTreesPriors[index] for index in noRepeatTreeSortedIndex]
+    return noRepeatChildTreesSorted, noRepeatChildTreesPriorsSorted 
 
 def calChildrenNumOfNodes(tree):
     nodes = list(tree.nodes)
