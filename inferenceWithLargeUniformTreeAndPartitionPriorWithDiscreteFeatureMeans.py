@@ -99,17 +99,15 @@ class VisualizePossiblePartition():
         cv2.rectangle(inferenceImage, (int(self.blankProportion/2 * self.imageHeightAllignedWithHumanAnswer), int(self.blankProportion/2 * self.imageWidthAllignedWithHumanAnswer)), (int((1 - self.blankProportion/2) * self.imageHeightAllignedWithHumanAnswer), int((1-self.blankProportion/2) * self.imageWidthAllignedWithHumanAnswer)), (255, 255, 255), self.lineWidth)
         cv2.imshow('image', image)
         cv2.imwrite('inference/demo' + str(imageIndex) + '_' + str(sampleIndex) + 'largeUniformSample.png', inferenceImage)
-    
+        cv2.destroyAllWindows()
+
 def main():
     #parameterToKeepImageLikelihoodGivenPartitionComputable = 1200
-    imageList = range(1)
+    imageList = [3, 5, 6, 7, 8, 9, 13, 14, 15, 17, 19, 20, 22, 23, 24, 25, 27, 28, 30, 31, 32, 33, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 47, 48, 49, 51, 53, 54, 55, 57, 59, 60, 61, 62, 63, 65, 69]
     
     treeNum = 10000
-    gamma = np.power(10, np.random.uniform(-1, 1)) 
-    gamma = 10
     maxDepth = 4
-    alphaDirichlet = np.power(10, np.random.uniform(-3, 3)) 
-
+    
     imageWidthAllignedWithHumanAnswer = 720
     imageHeightAllignedWithHumanAnswer = 720
     imageWidth = 960
@@ -132,16 +130,19 @@ def main():
     allDiscreteUniformFeaturesMeans = pd.DataFrame([[featureMean] * len(list(featureMappingScaleFromPropotionToValue)) for featureMean in featurePossibleMeans], columns = list(featureMappingScaleFromPropotionToValue))
     featuresStdVarince = pd.DataFrame([[featureStdVarince] * len(list(featureMappingScaleFromPropotionToValue))], columns = list(featureMappingScaleFromPropotionToValue))
 
-    treeHypothesesSpace, treeHypothesesSpacePrior = generateTree.generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum)
-    generateDiffPartitiedTrees = generatePartition.GenerateDiffPartitiedTrees(partitionInterval, alphaDirichlet, imageWidth, imageHeight)
-    partitionHypothesesSpaceGivenTreeHypothesesSpace = list(it.chain(*[generateDiffPartitiedTrees(treeHypothesis)[0] for treeHypothesis in treeHypothesesSpace]))
-    partitionsPriorLog = [partitionHypothesis.node[0]['treePriorLog'] + partitionHypothesis.node[0]['partitionPriorLog'] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
-    standardLengthOfPartitionsHypothesesSpace = len(partitionHypothesesSpaceGivenTreeHypothesesSpace)
     visualizePossiblePartition = VisualizePossiblePartition(imageWidth, imageHeight, imageWidthAllignedWithHumanAnswer, imageHeightAllignedWithHumanAnswer, blankProportion, lineWidth)                
     for imageIndex in imageList:
         texonsObserved = pd.read_csv('generate/demoUnscaled' + str(imageIndex) + '.csv')
 
         print(datetime.datetime.now())
+        gamma = np.random.uniform(0.1, 10)
+        treeHypothesesSpace, treeHypothesesSpacePrior = generateTree.generateNCRPTreesAndRemoveRepeatChildNodeAndMapPriorsToNewTrees(gamma, maxDepth, treeNum)
+        
+        alphaDirichlet = np.random.uniform(0.01, 100) 
+        generateDiffPartitiedTrees = generatePartition.GenerateDiffPartitiedTrees(partitionInterval, alphaDirichlet, imageWidth, imageHeight)
+        partitionHypothesesSpaceGivenTreeHypothesesSpace = list(it.chain(*[generateDiffPartitiedTrees(treeHypothesis)[0] for treeHypothesis in treeHypothesesSpace]))
+        partitionsPriorLog = [partitionHypothesis.node[0]['treePriorLog'] + partitionHypothesis.node[0]['partitionPriorLog'] for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
+        
         calOnePartitionLikelihoodLog = CalOnePartitionLikelihoodLog(allDiscreteUniformFeaturesMeans, featuresStdVarince, texonsObserved)
         partitionsLikelihoodLogConditionOnObservedData = [calOnePartitionLikelihoodLog(partitionHypothesis) for partitionHypothesis in partitionHypothesesSpaceGivenTreeHypothesesSpace]
         

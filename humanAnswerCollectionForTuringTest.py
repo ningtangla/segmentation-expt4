@@ -15,8 +15,8 @@ BLANK_PROPORTION = 0.1
 ORIGIN_IMGWIDTH = 960
 ORIGIN_IMGHEIGHT = 960
 CUT_NUMBER = 3
-IMAGE_NUMBER = 30
-IMAGE_ORDER = range(IMAGE_NUMBER)
+IMAGE_NUMBER = 48
+IMAGE_ORDER = [0, 3, 5, 6, 8, 14, 17, 20, 22, 23, 30, 31, 32, 35, 37, 38, 39, 41, 43, 44, 45, 47, 48, 49, 51, 53, 54, 57, 59, 60, 63, 69, 112, 123, 130, 136, 147, 160, 171, 176, 200, 207, 208, 213, 220, 223, 235, 239]
 COLOR_ALL = [[0,0,0],[128,128,128],[0,0,255],[0,255,0],[255,0,0],[0,255,255],[255,0,255],[255,255,0],[255,255,255]]
 COLOR_DATA = []
 VERTEXES_DATA = []
@@ -48,11 +48,11 @@ def possible_cutpos(vertexes):
         len_yside = max_y - min_y
         possible_cutpoints = []             
         if len_xside > INTERVAL:
-            for k in range(int(len_xside//INTERVAL)):
+            for k in range(int(len_xside//INTERVAL) - 1):
                 possible_cutpoints.append([min_x + (k+1) * INTERVAL, min_y])
                 possible_cutpoints.append([min_x + (k+1) * INTERVAL, max_y])     
         if len_yside > INTERVAL:
-            for k in range(int(len_yside//INTERVAL)):
+            for k in range(int(len_yside//INTERVAL) - 1):
                 possible_cutpoints.append([min_x, min_y + (k+1) * INTERVAL])
                 possible_cutpoints.append([max_x, min_y + (k+1) * INTERVAL])
         possible_points.append(possible_cutpoints)
@@ -180,9 +180,9 @@ def cut(vertexes, cut_order, image, image_number):
         points = np.array(vertexes[i], np.int32)
         cv2.polylines(image, [points], True, (255, 255, 255), LINE_SIZE)
         cv2.imshow('image', image)
-        
-    image, cut_order = parse(vertexes = vertexes, image = image, cut_order = cut_order)[1:3]
     cv2.imwrite(data_path+'demo'+str(IMAGE_ORDER[image_number - 1])+'_'+SUB_NUM+'cut'+ str(CUT_NUMBER - cut_order + 1)+'.png', image)
+    image, cut_order = parse(vertexes = vertexes, image = image, cut_order = cut_order)[1:3]
+
     if cut_order == 1:
         for k in range(len(vertexes)):
             cv2.rectangle(image, (int(vertexes[k][0][0]), int(vertexes[k][0][1])), (int(vertexes[k][2][0]), int(vertexes[k][2][1])), (255, 255, 255), LINE_SIZE)            
@@ -210,6 +210,7 @@ def iamge_generate(image_number):
         image_number = 1
     if image_number == 1:
         print('done')
+        cv2.destroyAllWindows()
         return    
     return iamge_generate(image_number-1)
     
